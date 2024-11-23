@@ -17,12 +17,17 @@ pub struct Track {
 impl Track {
     pub fn new(metadata: Value, progress: f64, duration: f64) -> Self {
         let data = metadata.get("data").unwrap().as_object().unwrap();
+        let data: serde_json::Map<String, Value> = data
+            .iter()
+            .map(|(k, v)| (k.to_lowercase(), v.clone()))
+            .collect();
 
         Track {
-            title:  data.get("Title") .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
-            artist: data.get("Artist").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
-            album:  data.get("Album") .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
-            date:   data.get("Date")  .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
+            // TOOD: I'm confident these fields could be populated more succinctly
+            title:  data.get("title") .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
+            artist: data.get("artist").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
+            album:  data.get("album") .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
+            date:   data.get("date")  .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
             progress,
             duration,
         }
