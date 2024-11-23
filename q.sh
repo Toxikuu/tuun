@@ -15,7 +15,7 @@ fi
 
 mapfile -t DISPLAY_NAMES < <(printf '%s\n' "${FULL_PATHS[@]}" | awk -F'/' '{print $NF}')
 
-SELECTED_NAMES=$(printf '%s\n' "${DISPLAY_NAMES[@]}" | rofi -i -matching fuzzy -sort -theme-str 'window {width: 50%;}' -theme-str 'listview {columns: 1; lines: 10;}' -dmenu -multi-select -p "Select songs:")
+SELECTED_NAMES=$(printf '%s\n' "${DISPLAY_NAMES[@]}" | rofi -matching fuzzy -i -sort -theme-str 'window {width: 50%;}' -theme-str 'listview {columns: 1; lines: 15;}' -dmenu -multi-select -p "Queue songs:")
 if [[ -z "$SELECTED_NAMES" ]]; then
     echo "No songs selected"
     exit 0
