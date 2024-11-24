@@ -13,7 +13,6 @@ where
         let start = std::time::Instant::now();
         while start.elapsed() < delay {
             if *cancelled_clone.lock().unwrap() {
-                println!("Cancelled task");
                 return;
             }
             thread::sleep(Duration::from_millis(20));
