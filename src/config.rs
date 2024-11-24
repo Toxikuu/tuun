@@ -31,7 +31,9 @@ pub struct GeneralConfig {
 }
 
 pub fn load_config() -> Config {
-    let config_str = fs::read_to_string("config.toml").expect("Couldn't find config.toml");
+    let home_dir = dirs::home_dir().expect("Couldn't find home directory");
+    let config_path = home_dir.join(".config/tuun/config.toml");
+    let config_str = fs::read_to_string(config_path).expect("Couldn't find config.toml");
     let config: Config = toml::de::from_str(&config_str).expect("Invalid config");
 
     config
