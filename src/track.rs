@@ -5,11 +5,13 @@
 use serde_json::Value;
 use std::io::{self, Write};
 
+#[derive(Debug, Clone)]
 pub struct Track {
     pub title: String,
     pub artist: String,
     pub album: String,
     pub date: String,
+    pub arturl: String,
     pub progress: f64,
     pub duration: f64,
 }
@@ -28,6 +30,7 @@ impl Track {
             artist: data.get("artist").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
             album:  data.get("album") .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
             date:   data.get("date")  .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
+            arturl: data.get("arturl").and_then(|v| v.as_str()).unwrap_or("https://i1.sndcdn.com/artworks-000412100175-y1xaip-t500x500.jpg").to_string(),
             progress,
             duration,
         }
