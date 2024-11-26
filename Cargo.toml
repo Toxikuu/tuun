@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "0.3.1" # website field
+version = "0.3.2" # bloat removal
 edition = "2021"
 
 [dependencies]
