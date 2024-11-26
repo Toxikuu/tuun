@@ -12,7 +12,6 @@ pub struct Track {
     pub album: String,
     pub date: String,
     pub arturl: String,
-    pub website: String,
     pub progress: f64,
     pub duration: f64,
 }
@@ -32,7 +31,6 @@ impl Track {
             album:  data.get("album") .and_then(|v| v.as_str()).unwrap_or("<Unknown album>").to_string(),
             date:   data.get("date")  .and_then(|v| v.as_str()).unwrap_or("<Unknown release date>").to_string(),
             arturl: data.get("arturl").and_then(|v| v.as_str()).unwrap_or("https://i1.sndcdn.com/artworks-000412100175-y1xaip-t500x500.jpg").to_string(), // cute cat picture when in doubt
-            website: data.get("website").and_then(|v| v.as_str()).unwrap_or("<Unknown website>").to_string(),
             progress,
             duration,
         }
@@ -48,11 +46,9 @@ impl Track {
 \x1b[36;1m02 \x1b[30m::: Art - \x1b[37m{}\x1b[0m
 \x1b[36;1m03 \x1b[30m::: Alb - \x1b[37m{}\x1b[0m
 \x1b[36;1m04 \x1b[30m::: Dte - \x1b[37m{}\x1b[0m
-\x1b[36;1m05 \x1b[30m::: Web - \x1b[37m{}\x1b[0m
-\x1b[36;1m06 \x1b[30m::: Aul - \x1b[37m{}\x1b[0m
 \x1b[36;1m07 \x1b[30m::: Prg - \x1b[37m{:.6}/{:.6}\x1b[0m \
 "                                            
-, self.title, self.artist, self.album, self.date, self.website, self.arturl, self.progress, self.duration
+, self.title, self.artist, self.album, self.date, self.progress, self.duration
         );
 
         io::stdout().flush().expect("Failed to flush stdout");
