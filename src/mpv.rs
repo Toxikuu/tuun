@@ -5,19 +5,19 @@
 use crate::track::Track;
 use crate::{vpr, erm};
 use serde_json::Value;
-use std::process::Command;
+use std::fs;
 use std::io::{Write, BufReader, BufRead};
 use std::os::unix::net::UnixStream;
-use std::time::Duration;
+use std::process::Command;
 use std::thread::sleep;
-use std::fs;
+use std::time::Duration;
 
 const PLAYLIST: &str ="/home/t/Music/Playlists/all.tpl";
-const SOCKET: &str = "/tmp/mpvsocket";
 const RETRY_DELAY: u64 = 12;
+const SOCKET: &str = "/tmp/mpvsocket";
 
 pub fn wait_for_socket() {
-    sleep(Duration::from_millis(20)); // initial wait
+    sleep(Duration::from_millis(217)); // initial wait
     if fs::metadata(SOCKET).is_err() {
         panic!("Timed out waiting for mpv socket to be ready");
     }
@@ -34,8 +34,9 @@ pub fn launch_mpv() {
         .spawn()
         .expect("Failed to launch mpv");
 
-    wait_for_socket();
     vpr!("mpv launched with PID: {}", child.id());
+    drop(child);
+    wait_for_socket();
 }
 
 pub fn mpv_cmd(command: &str) -> Result<String, String> {
@@ -79,6 +80,81 @@ pub fn mpv_cmd(command: &str) -> Result<String, String> {
     }
 }
 
+pub enum PauseStatus {
+    Playing,
+    Paused,
+}
+
+pub fn get_pause_status() -> Option<PauseStatus> {
+    vpr!("Checking pause status...");
+    
+    let command = r#"{ "command": ["get_property", "pause"] }"#;
+    for _ in 1..=35 {
+        match mpv_cmd(command) {
+            Ok(r) => {
+                if let Ok(v) = serde_json::from_str::<Value>(&r) {
+                    if let Some(pause_status) = v.get("data").and_then(|d| d.as_bool()) {
+                        match pause_status {
+                            false => return Some(PauseStatus::Playing),
+                            _ => return Some(PauseStatus::Paused),
+                        }
+                    }
+                    erm!("Error getting pause status: Missing data field in json!");
+                    sleep(Duration::from_millis(RETRY_DELAY));
+                    vpr!("Continuing...");
+                    continue
+                }
+                erm!("Error getting pause status: Failed to convert r to json!");
+                sleep(Duration::from_millis(RETRY_DELAY));
+                vpr!("Continuing...");
+                continue
+            },
+            Err(_e) => {
+                erm!("Error getting pause status: Unknown error!");
+                sleep(Duration::from_millis(RETRY_DELAY));
+                vpr!("Continuing...");
+                continue
+            }
+        }
+    }
+    None
+}
+
+pub fn get_loop_status() -> Option<bool> {
+    // true = looped, false = not looped
+    vpr!("Getting loop status...");
+
+    let command = r#"{ "command": ["get_property", "loop"] }"#;
+    for _ in 1..=35 {
+        match mpv_cmd(command) {
+            Ok(r) => {
+                if let Ok(v) = serde_json::from_str::<Value>(&r) {
+                    if let Some(status) = v.get("data").and_then(|d| d.as_bool()) {
+                        match status {
+                            true => return Some(true),
+                            false => return Some(false),
+                        }
+                    }
+                    erm!("Error getting loop status: Missing data field in json!");
+                    sleep(Duration::from_millis(RETRY_DELAY));
+                    vpr!("Continuing...");
+                    continue
+                }
+                erm!("Error getting loop status: Failed to convert r to json!");
+                sleep(Duration::from_millis(RETRY_DELAY));
+                vpr!("Continuing...");
+                continue
+            }
+            Err(_e) => {
+                erm!("Error getting loop status: Unknown error!");
+                sleep(Duration::from_millis(RETRY_DELAY));
+                vpr!("Continuing...");
+                continue
+            }
+        }
+    }
+    None
+}
 
 pub fn get_progress() -> Option<f64> {
     vpr!("Getting progress...");
