@@ -84,7 +84,7 @@ pub fn get_progress() -> Option<f64> {
     vpr!("Getting progress...");
     
     let command = r#"{ "command": ["get_property", "playback-time"] }"#;
-    for _ in 1..=15 {
+    for _ in 1..=35 {
         match mpv_cmd(command) {
             Ok(r) => {
                 if let Ok(v) = serde_json::from_str::<Value>(&r) {
@@ -117,7 +117,7 @@ pub fn get_duration() -> Option<f64> {
     vpr!("Getting duration...");
 
     let command = r#"{ "command": ["get_property", "duration"] }"#;
-    for _ in 1..=15 {
+    for _ in 1..=35 {
         match mpv_cmd(command) {
             Ok(r) => {
                 if let Ok(v) = serde_json::from_str::<Value>(&r) {
@@ -150,7 +150,7 @@ pub fn get_metadata() -> Value {
     vpr!("Getting metadata...");
 
     let command = r#"{ "command": ["get_property", "metadata"] }"#;
-    for _a in 1..=15 {
+    for _a in 1..=35 {
         vpr!("Metadata fetch attempt {}", _a);
 
         match mpv_cmd(command) {
