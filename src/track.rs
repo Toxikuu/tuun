@@ -2,7 +2,7 @@
 //
 // defines the track struct
 
-use crate::mpv::{get_loop_status, get_pause_status, PauseStatus};
+use crate::mpv::{get_loop_status, get_pause_status, LoopStatus, PauseStatus};
 use serde_json::Value;
 use std::io::{self, Write};
 
@@ -68,8 +68,8 @@ impl Track {
     pub fn is_looped(&self) -> Option<bool> {
         if let Some(status) = get_loop_status() {
             match status {
-                true => return Some(true),
-                false => return Some(false),
+                LoopStatus::Inf => return Some(true),
+                LoopStatus::Not => return Some(false),
             }
         }
         None
