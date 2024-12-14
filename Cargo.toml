@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "0.3.2" # bloat removal
+version = "0.4.0" # loop and pause support, and some organization
 edition = "2021"
 
 [dependencies]
