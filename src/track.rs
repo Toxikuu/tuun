@@ -2,18 +2,19 @@
 //
 // defines the track struct
 
+use crate::mpv::{get_loop_status, get_pause_status, PauseStatus};
 use serde_json::Value;
 use std::io::{self, Write};
 
 #[derive(Debug, Clone)]
 pub struct Track {
-    pub title: String,
-    pub artist: String,
     pub album: String,
-    pub date: String,
+    pub artist: String,
     pub arturl: String,
-    pub progress: f64,
+    pub date: String,
     pub duration: f64,
+    pub progress: f64,
+    pub title: String,
 }
 
 impl Track {
@@ -52,5 +53,25 @@ impl Track {
         );
 
         io::stdout().flush().expect("Failed to flush stdout");
+    }
+
+    pub fn is_paused(&self) -> Option<bool> {
+        if let Some(status) = get_pause_status() {
+            match status {
+                PauseStatus::Playing => return Some(false),
+                PauseStatus::Paused => return Some(true),
+            }
+        }
+        None
+    }
+
+    pub fn is_looped(&self) -> Option<bool> {
+        if let Some(status) = get_loop_status() {
+            match status {
+                true => return Some(true),
+                false => return Some(false),
+            }
+        }
+        None
     }
 }
