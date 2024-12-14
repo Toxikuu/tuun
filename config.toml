@@ -1,0 +1,14 @@
+# this is a template for the config
+[lastfm]
+apikey = "<your lastfm apikey>"
+secret = "<your lastfm secret>"
+user = "<your lastfm user>"
+password = "<your lastfm password>"
+
+[discord]
+client_id = "<your discord client id>"
+
+[general]
+music_dir = "/home/user/Music" # tuun is best used with mp3s with embedded metadata and album art
+playlist = "/home/user/Music/Playlists/all.txt" # new-line delimited list of filepaths
+polling_rate = 42 # this is a good default
