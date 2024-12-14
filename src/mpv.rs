@@ -85,6 +85,11 @@ pub enum PauseStatus {
     Paused,
 }
 
+pub enum LoopStatus {
+    Not,
+    Inf,
+}
+
 pub fn get_pause_status() -> Option<PauseStatus> {
     vpr!("Checking pause status...");
     
@@ -120,7 +125,7 @@ pub fn get_pause_status() -> Option<PauseStatus> {
     None
 }
 
-pub fn get_loop_status() -> Option<bool> {
+pub fn get_loop_status() -> Option<LoopStatus> {
     // true = looped, false = not looped
     vpr!("Getting loop status...");
 
@@ -129,11 +134,12 @@ pub fn get_loop_status() -> Option<bool> {
         match mpv_cmd(command) {
             Ok(r) => {
                 if let Ok(v) = serde_json::from_str::<Value>(&r) {
-                    if let Some(status) = v.get("data").and_then(|d| d.as_bool()) {
-                        match status {
-                            true => return Some(true),
-                            false => return Some(false),
-                        }
+                    if let Some(status) = v.get("data") {
+                        return match status {
+                            Value::Bool(true) => Some(LoopStatus::Not),
+                            Value::String(s) if s == "inf" => Some(LoopStatus::Inf),
+                            _ => None
+                        };
                     }
                     erm!("Error getting loop status: Missing data field in json!");
                     sleep(Duration::from_millis(RETRY_DELAY));
