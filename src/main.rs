@@ -1,17 +1,17 @@
 // main.rs
-use std::io::{self, Write};
-use std::sync::{Arc, Mutex};
 use delay::execute_after;
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
+use std::io::{self, Write};
+use std::sync::{Arc, Mutex};
 
 mod config;
-mod scrobble;
-mod mpv;
-mod rpc;
 mod delay;
-mod track;
 mod flags;
 mod macros;
+mod mpv;
+mod rpc;
+mod scrobble;
+mod track;
 
 fn main() {
     let cfg = config::load_config();
@@ -40,6 +40,8 @@ fn main() {
         track.display();
         std::thread::sleep(std::time::Duration::from_millis(cfg.general.polling_rate));
 
+        if track.is_paused() == Some(true) { continue }
+
         if current_track != track.title {
             if let Some(cancelled) = &scrobble_task {
                 *cancelled.lock().unwrap() = true;
@@ -58,6 +60,23 @@ fn main() {
             scrobble_task = Some(execute_after(
                 scrobble_delay,
                 move || scrobble::scrobble(track_copy, lfm_copy)
+            ));
+
+        } else if track.is_looped() == Some(true) {
+            if let Some(cancelled) = &scrobble_task {
+                *cancelled.lock().unwrap() = true;
+                erm!("Cancelled scrobble task for '{}'", current_track);
+            }
+
+            let lfm_copy = lfm.clone();
+            let track_copy = track.clone();
+
+            let scrobble_delay = std::time::Duration::from_secs_f64(track.duration / 4.);
+            vpr!("Scrobbling looped track in {:#?} seconds", scrobble_delay);
+
+            scrobble_task = Some(execute_after(
+                scrobble_delay,
+                move || scrobble::scrobble(track_copy, lfm_copy),
             ));
         }
 
