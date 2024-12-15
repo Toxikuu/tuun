@@ -2,6 +2,7 @@
 //
 // responsible for interacting with mpv
 
+use crate::globals::CONFIG;
 use crate::track::Track;
 use crate::{vpr, erm};
 use serde_json::Value;
@@ -12,13 +13,11 @@ use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 
-const PLAYLIST: &str ="/home/t/Music/Playlists/all.tpl";
 const RETRY_DELAY: u64 = 12;
-const SOCKET: &str = "/tmp/mpvsocket";
 
 pub fn wait_for_socket() {
     sleep(Duration::from_millis(217)); // initial wait
-    if fs::metadata(SOCKET).is_err() {
+    if fs::metadata(&CONFIG.general.socket).is_err() {
         panic!("Timed out waiting for mpv socket to be ready");
     }
 }
@@ -29,8 +28,8 @@ pub fn launch_mpv() {
         .arg("--really-quiet")
         .arg("--geometry=350x350+1400+80")
         .arg("--title='tuun-mpv'")
-        .arg(format!("--playlist={}", PLAYLIST))
-        .arg(format!("--input-ipc-server={}", SOCKET))
+        .arg(format!("--playlist={}", CONFIG.general.playlist))
+        .arg(format!("--input-ipc-server={}", &CONFIG.general.socket))
         .spawn()
         .expect("Failed to launch mpv");
 
@@ -43,7 +42,7 @@ pub fn mpv_cmd(command: &str) -> Result<String, String> {
     vpr!("Sending mpv command '{}'", command);
     let command = format!("{}\n", command);
 
-    let mut stream = UnixStream::connect(SOCKET)
+    let mut stream = UnixStream::connect(&CONFIG.general.socket)
         .map_err(|e| format!("Failed to connect to mpv ipc: {}", e))?;
 
     stream.set_read_timeout(Some(Duration::from_millis(50)))
