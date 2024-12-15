@@ -1,9 +1,10 @@
 [package]
 name = "tuun"
-version = "0.4.0" # loop and pause support, and some organization
+version = "0.5.0" # tuunfm support, config improvements
 edition = "2021"
 
 [dependencies]
+chrono = "0.4.39"
 dirs = "5.0.1"
 discord-rich-presence = "0.2.5"
 lazy_static = "1.5.0"
@@ -11,3 +12,4 @@ rustfm-scrobble = "1.1.1"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
 toml = "0.8.19"
+ureq = { version = "2.12.1", features = ["json"] }
