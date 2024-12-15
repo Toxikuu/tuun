@@ -2,13 +2,16 @@
 
 TODO
 
-    Add loop support
-        mostly just for scrobbling
 
 WIP
 
 
 DONEISH
+
+    Add loop support
+        mostly just for scrobbling
+
+    Add tuunfm support
 
     Add config.toml
 
