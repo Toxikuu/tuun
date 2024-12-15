@@ -2,9 +2,12 @@
 //
 // responsible for scrobbling
 
+use crate::globals::CONFIG;
 use rustfm_scrobble::{Scrobble, Scrobbler};
 use crate::track::Track;
-use crate::vpr;
+use chrono::Utc;
+use serde_json::json;
+use crate::{vpr, erm};
 
 #[derive(Debug, Clone)]
 pub struct LastFM {
@@ -15,12 +18,24 @@ pub struct LastFM {
 }
 
 impl LastFM {
-    pub fn new(apikey: String, secret: String, username: String, password: String) -> Self {
-        Self { apikey, secret, username, password }
+    pub fn new(apikey: &str, secret: &str, username: &str, password: &str) -> Self {
+        Self { 
+            apikey: apikey.to_string(),
+            secret: secret.to_string(),
+            username: username.to_string(),
+            password: password.to_string()
+        }
     }
 }
 
-pub fn scrobble(track: Track, lfm: LastFM) {
+pub fn lfm_scrobble(track: &Track) {
+    let lfm = LastFM::new(
+        &CONFIG.lastfm.apikey,
+        &CONFIG.lastfm.secret,
+        &CONFIG.lastfm.user,
+        &CONFIG.lastfm.password,
+    );
+
     let mut scrobbler = Scrobbler::new(&lfm.apikey, &lfm.secret);
 
     if let Err(e) = scrobbler.authenticate_with_password(&lfm.username, &lfm.password) {
@@ -41,4 +56,37 @@ pub fn scrobble(track: Track, lfm: LastFM) {
         return;
     }
     vpr!("Sent scrobble!");
+}
+
+pub fn tfm_scrobble(track: &Track) {
+    let timestamp = Utc::now().timestamp();
+
+    let payload = json!({
+        "title": format!("{}", track.title),
+        "artist": format!("{}", track.artist),
+        "album": format!("{}", track.album),
+        "arturl": format!("{}", track.arturl),
+        "date": format!("{}", track.date),
+        "duration": track.duration,
+        "timestamp": timestamp
+    });
+
+    let link = format!("{}/scrobble", CONFIG.tuunfm.link);
+    let response = ureq::post(&link)
+        .set("Content-Type", "application/json")
+        .send_json(payload);
+
+    match response {
+        Ok(r) => {
+            erm!("Response: {}", r.into_string().unwrap_or_else(|_| "No body".to_string()));
+        }
+        Err(e) => {
+            erm!("Error: {}", e);
+        }
+    }
+}
+
+pub fn scrobble(track: &Track) {
+    if CONFIG.lastfm.used { lfm_scrobble(track) }
+    if CONFIG.tuunfm.used { tfm_scrobble(track) }
 }
