@@ -1,14 +1,24 @@
-# this is a template for the config
+# template config
+
+# lastfm scrobbling
 [lastfm]
+used = false
 apikey = "<your lastfm apikey>"
 secret = "<your lastfm secret>"
 user = "<your lastfm user>"
 password = "<your lastfm password>"
 
+# discord rich presence
 [discord]
+used = false
 client_id = "<your discord client id>"
 
 [general]
-music_dir = "/home/user/Music" # tuun is best used with mp3s with embedded metadata and album art
-playlist = "/home/user/Music/Playlists/all.txt" # new-line delimited list of filepaths
+verbose = false
+playlist = "/home/user/Music/Playlists/all.txt" # new-line delimited list of absolute filepaths
+socket = "/tmp/mpvsocket"
 polling_rate = 42 # this is a good default
+
+[tuunfm]
+used = true
+link = "http://127.0.0.1:8080"
