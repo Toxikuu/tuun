@@ -2,6 +2,7 @@
 //
 // handles discord rpc
 
+use crate::globals::CONFIG;
 use crate::vpr;
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use std::error::Error;
@@ -10,6 +11,8 @@ use crate::track::Track;
 use std::sync::{Arc, Mutex};
 
 pub fn set(track: Track, client: &Arc<Mutex<DiscordIpcClient>>) -> Result<(), Box<dyn Error>> {
+    if !CONFIG.discord.used { return Ok(()) } // maybe return Err("Unused")
+
     let mut client = client.lock().unwrap();
     client.clear_activity()?;
     vpr!("Cleared rpc activity");
