@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "0.5.0" # tuunfm support, config improvements
+version = "0.5.1" # minor tweaks
 edition = "2021"
 
 [dependencies]
