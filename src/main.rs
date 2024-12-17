@@ -77,7 +77,7 @@ fn main() {
 
                 let track_copy = track.clone();
 
-                let scrobble_delay = std::time::Duration::from_secs_f64(track.duration * 0.96);
+                let scrobble_delay = std::time::Duration::from_secs_f64(track.duration * 0.25);
                 vpr!("Scrobbling looped track in {:#?} seconds", scrobble_delay);
 
                 scrobble_task = Some(execute_after(
