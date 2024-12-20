@@ -28,7 +28,9 @@ SELECTED_NAMES=$(echo "$SELECTED_NAMES" | shuf)
 while IFS= read -r SELECTED_NAME; do
     for i in "${!DISPLAY_NAMES[@]}"; do
         if [[ "${DISPLAY_NAMES[$i]}" == "$SELECTED_NAME" ]]; then
-            echo '{"command": ["loadfile", "'"${FULL_PATHS[$i]}"'", "insert-next"]}' | socat - "$MPV_SOCKET"
+            ESCAPED_PATH=$(jq -R <<< "${FULL_PATHS[$i]}")
+            echo "$ESCAPED_PATH"
+            echo '{"command": ["loadfile", '"$ESCAPED_PATH"', "insert-next"]}' | socat - "$MPV_SOCKET"
             break
         fi
     done
