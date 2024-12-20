@@ -11,3 +11,9 @@ It uses mpv under the hood, and the queue script uses rofi.
 ## Usage
 Just run the binary, which will launch mpv, pointing at a (currently hardcoded) playlist.
 I recommend adding custom keybinds in your window manager for the binary and the queue script.
+
+## Dependencies
+- mpv
+- rofi (for q.sh)
+- jq (needed for proper proper escaping in q.sh)
+- tuunfm (optional, for tuunfm scrobbling)
