@@ -1,5 +1,4 @@
 #!/bin/bash
-# TODO: test this
 
 if grep -A1 tuunfm ~/.config/tuun/config.toml | grep -q true; then
   if ! pgrep -x tuunfm; then
