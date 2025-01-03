@@ -2,11 +2,16 @@
 
 TODO
 
+    Add support for queueing entire playlists
+        (and launching with a specific playlist)
 
 WIP
 
 
 DONEISH
+
+    Add support for launching from q.sh
+        useful if you want to play a specific song
 
     Add loop support
         mostly just for scrobbling
