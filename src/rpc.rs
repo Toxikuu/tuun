@@ -9,9 +9,13 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::track::Track;
 use std::sync::{Arc, Mutex};
+use std::path::Path;
 
 pub fn set(track: Track, client: &Arc<Mutex<DiscordIpcClient>>) -> Result<(), Box<dyn Error>> {
     if !CONFIG.discord.used { return Ok(()) } // maybe return Err("Unused")
+
+    let socketpath = Path::new("/run/user/1000/discord-ipc-0");
+    if !socketpath.exists() { return Ok(()) } // don't complain when discord is closed
 
     let mut client = client.lock().unwrap();
     client.clear_activity()?;
@@ -21,7 +25,7 @@ pub fn set(track: Track, client: &Arc<Mutex<DiscordIpcClient>>) -> Result<(), Bo
         .large_image(&track.arturl)
         .large_text(&track.album)
         .small_image("pfp")
-        .small_text("hello :3");
+        .small_text("hello :3"); // TODO: Make this show my top track of the day
 
     let now = SystemTime::now();
     let duration = now.duration_since(UNIX_EPOCH)
