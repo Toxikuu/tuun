@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "0.5.1" # minor tweaks
+version = "0.5.2" # made tuun run with discord closed
 edition = "2021"
 
 [dependencies]
