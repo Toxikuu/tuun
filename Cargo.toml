@@ -1,7 +1,7 @@
 [package]
 name = "tuun"
-version = "0.5.2" # made tuun run with discord closed
-edition = "2021"
+version = "0.5.3" # error handling, updated dependencies and edition
+edition = "2024"
 
 [dependencies]
 chrono = "0.4.39"
