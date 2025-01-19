@@ -48,7 +48,9 @@ fn main() {
             let track_copy = track.clone();
             let track_copy2 = track.clone();
 
-            rpc::set(track_copy2, &client).unwrap();
+            rpc::set(track_copy2, &client).unwrap_or_else(|_|
+                erm!("Rip discord ipc socket 😔")
+            );
 
             let scrobble_delay = std::time::Duration::from_secs_f64(track.duration * 0.25);
             vpr!("Scrobbling in {:#?} seconds", scrobble_delay);
