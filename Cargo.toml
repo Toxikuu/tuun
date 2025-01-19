@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "0.5.3" # error handling, updated dependencies and edition
+version = "0.5.4" # minor tweaks && updated dependencies
 edition = "2024"
 
 [dependencies]
