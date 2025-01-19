@@ -47,7 +47,7 @@ impl Track {
 \x1b[36;1m02 \x1b[30m::: Art - \x1b[37m{}\x1b[0m
 \x1b[36;1m03 \x1b[30m::: Alb - \x1b[37m{}\x1b[0m
 \x1b[36;1m04 \x1b[30m::: Dte - \x1b[37m{}\x1b[0m
-\x1b[36;1m07 \x1b[30m::: Prg - \x1b[37m{:.6}/{:.6}\x1b[0m \
+\x1b[36;1m07 \x1b[30m::: Prg - \x1b[37m{:.3}/{:.3}\x1b[0m \
 "                                            
 , self.title, self.artist, self.album, self.date, self.progress, self.duration
         );
