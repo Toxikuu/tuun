@@ -9,7 +9,7 @@ if grep -A1 tuunfm ~/.config/tuun/config.toml | grep -q true; then
 fi
 
 if ! pgrep -x tuun; then
-  tuun
+  tuun "$@"
 else
   echo "tuun is already running!" >&2
 fi
