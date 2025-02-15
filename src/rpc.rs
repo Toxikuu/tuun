@@ -3,7 +3,7 @@
 // handles discord rpc
 
 use crate::globals::CONFIG;
-use crate::vpr;
+use crate::{vpr, erm};
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -11,7 +11,7 @@ use crate::track::Track;
 use std::sync::{Arc, Mutex};
 use std::path::Path;
 
-pub fn set(track: Track, client: &Arc<Mutex<DiscordIpcClient>>) -> Result<(), Box<dyn Error>> {
+pub fn set(track: &Track, client: &Arc<Mutex<DiscordIpcClient>>) -> Result<(), Box<dyn Error>> {
     if !CONFIG.discord.used { return Ok(()) } // maybe return Err("Unused")
 
     let socketpath = Path::new("/run/user/1000/discord-ipc-0");
@@ -43,7 +43,8 @@ pub fn set(track: Track, client: &Arc<Mutex<DiscordIpcClient>>) -> Result<(), Bo
 
     vpr!("Attempting to set discord activity");
     client.set_activity(payload).expect("Failed to set activity");
-    vpr!("Supposedly set activity. Sleeping...");
+    drop(client);
+    erm!("Supposedly set activity. Sleeping...");
     
     Ok(())
 }

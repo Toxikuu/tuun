@@ -3,7 +3,7 @@
 // responsible for handling config.toml
 
 use serde::Deserialize;
-use std::fs;
+use std::{fs, time::Duration};
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -33,7 +33,9 @@ pub struct GeneralConfig {
     pub verbose: bool,
     pub socket: String,
     pub playlist: String,
-    pub polling_rate: u64,
+    polling_rate: u64,
+    #[serde(skip)]
+    pub polling_rate_dur: Duration,
 }
 
 #[derive(Deserialize)]
@@ -47,7 +49,9 @@ impl Config {
         let home_dir = dirs::home_dir().expect("Couldn't find home directory");
         let config_path = home_dir.join(".config/tuun/config.toml");
         let config_str = fs::read_to_string(config_path).expect("Couldn't find config.toml");
-        let config: Config = toml::de::from_str(&config_str).expect("Invalid config");
+        let mut config: Self = toml::de::from_str(&config_str).expect("Invalid config");
+
+        config.general.polling_rate_dur = Duration::from_millis(config.general.polling_rate);
 
         config
     }

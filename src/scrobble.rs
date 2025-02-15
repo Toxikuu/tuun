@@ -67,7 +67,7 @@ pub fn tfm_scrobble(track: &Track) {
         "album": format!("{}", track.album),
         "arturl": format!("{}", track.arturl),
         "date": format!("{}", track.date),
-        "duration": track.duration,
+        "duration": track.duration.as_secs_f64(),
         "timestamp": timestamp
     });
 

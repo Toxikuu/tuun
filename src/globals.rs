@@ -1,6 +1,4 @@
-use lazy_static::lazy_static;
+use std::sync::LazyLock;
 use crate::config::Config;
 
-lazy_static! {
-    pub static ref CONFIG: Config = Config::load();
-}
+pub static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);

@@ -5,8 +5,7 @@
 #[macro_export]
 macro_rules! vpr {
     ($($arg:tt)*) => {{
-        use $crate::flags::VERBOSE;
-        if *VERBOSE.lock().unwrap() {
+        if $crate::flags::is_verbose() {
             let f = std::path::Path::new(file!())
                 .file_name()
                 .and_then(|n| n.to_str())

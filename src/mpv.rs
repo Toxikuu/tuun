@@ -13,13 +13,11 @@ use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 
-const RETRY_DELAY: u64 = 12;
+const RETRY_DELAY: Duration = Duration::from_millis(12);
 
 pub fn wait_for_socket() {
     sleep(Duration::from_millis(217)); // initial wait
-    if fs::metadata(&CONFIG.general.socket).is_err() {
-        panic!("Timed out waiting for mpv socket to be ready");
-    }
+    assert!(fs::metadata(&CONFIG.general.socket).is_ok(), "Timed out waiting for mpv socket to be ready");
 }
 
 pub fn launch_mpv() {
@@ -39,17 +37,17 @@ pub fn launch_mpv() {
 }
 
 pub fn mpv_cmd(command: &str) -> Result<String, String> {
-    vpr!("Sending mpv command '{}'", command);
-    let command = format!("{}\n", command);
+    vpr!("Sending mpv command '{command}'");
+    let command = format!("{command}\n");
 
     let mut stream = UnixStream::connect(&CONFIG.general.socket)
-        .map_err(|e| format!("Failed to connect to mpv ipc: {}", e))?;
+        .map_err(|e| format!("Failed to connect to mpv ipc: {e}"))?;
 
     stream.set_read_timeout(Some(Duration::from_millis(50)))
-        .map_err(|e| format!("Failed to set timeout: {}", e))?;
+        .map_err(|e| format!("Failed to set timeout: {e}"))?;
 
     stream.write_all(command.as_bytes())
-        .map_err(|e| format!("Failed to send command: {}", e))?;
+        .map_err(|e| format!("Failed to send command: {e}"))?;
 
     let mut reader = BufReader::new(stream);
     let mut response = String::new();
@@ -71,11 +69,9 @@ pub fn mpv_cmd(command: &str) -> Result<String, String> {
                 }
             },
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock 
-                   || e.kind() == std::io::ErrorKind::TimedOut => {
-                continue;
-            },
-            Err(e) => return Err(format!("Failed to read response: {}", e)),
-        };
+                   || e.kind() == std::io::ErrorKind::TimedOut => {},
+            Err(e) => return Err(format!("Failed to read response: {e}")),
+        }
     }
 }
 
@@ -97,27 +93,25 @@ pub fn get_pause_status() -> Option<PauseStatus> {
         match mpv_cmd(command) {
             Ok(r) => {
                 if let Ok(v) = serde_json::from_str::<Value>(&r) {
-                    if let Some(pause_status) = v.get("data").and_then(|d| d.as_bool()) {
-                        match pause_status {
-                            false => return Some(PauseStatus::Playing),
-                            _ => return Some(PauseStatus::Paused),
+                    if let Some(pause_status) = v.get("data").and_then(Value::as_bool) {
+                        if pause_status {
+                            return Some(PauseStatus::Paused)
                         }
+                        return Some(PauseStatus::Playing)
                     }
                     erm!("Error getting pause status: Missing data field in json!");
-                    sleep(Duration::from_millis(RETRY_DELAY));
+                    sleep(RETRY_DELAY);
                     vpr!("Continuing...");
                     continue
                 }
                 erm!("Error getting pause status: Failed to convert r to json!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             },
             Err(_e) => {
                 erm!("Error getting pause status: Unknown error!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
         }
     }
@@ -141,20 +135,18 @@ pub fn get_loop_status() -> Option<LoopStatus> {
                         };
                     }
                     erm!("Error getting loop status: Missing data field in json!");
-                    sleep(Duration::from_millis(RETRY_DELAY));
+                    sleep(RETRY_DELAY);
                     vpr!("Continuing...");
                     continue
                 }
                 erm!("Error getting loop status: Failed to convert r to json!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
             Err(_e) => {
                 erm!("Error getting loop status: Unknown error!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
         }
     }
@@ -169,24 +161,22 @@ pub fn get_progress() -> Option<f64> {
         match mpv_cmd(command) {
             Ok(r) => {
                 if let Ok(v) = serde_json::from_str::<Value>(&r) {
-                    if let Some(progress) = v.get("data").and_then(|d| d.as_f64()) {
+                    if let Some(progress) = v.get("data").and_then(Value::as_f64) {
                         return Some(progress);
                     }
                     erm!("Error getting progress: Missing data field in json!");
-                    sleep(Duration::from_millis(RETRY_DELAY));
+                    sleep(RETRY_DELAY);
                     vpr!("Continuing...");
                     continue
                 }
                 erm!("Error getting progress: Failed to convert r to json!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
             Err(_e) => {
                 erm!("Error getting progress: Unknown error!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
         }
     }
@@ -202,24 +192,22 @@ pub fn get_duration() -> Option<f64> {
         match mpv_cmd(command) {
             Ok(r) => {
                 if let Ok(v) = serde_json::from_str::<Value>(&r) {
-                    if let Some(duration) = v.get("data").and_then(|d| d.as_f64()) {
+                    if let Some(duration) = v.get("data").and_then(Value::as_f64) {
                         return Some(duration);
                     }
                     erm!("Error getting duration: Missing data field in json!");
-                    sleep(Duration::from_millis(RETRY_DELAY));
+                    sleep(RETRY_DELAY);
                     vpr!("Continuing...");
                     continue
                 }
                 erm!("Error getting duration: Error converting r to json!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
             Err(_e) => {
                 erm!("Error getting duration: Unknown error!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
         }
     }
@@ -231,8 +219,8 @@ pub fn get_metadata() -> Value {
     vpr!("Getting metadata...");
 
     let command = r#"{ "command": ["get_property", "metadata"] }"#;
-    for _a in 1..=35 {
-        vpr!("Metadata fetch attempt {}", _a);
+    for a in 1..=35 {
+        vpr!("Metadata fetch attempt {}", a);
 
         match mpv_cmd(command) {
             Ok(r) => {
@@ -241,29 +229,27 @@ pub fn get_metadata() -> Value {
                         return v
                     }
                     erm!("Error getting metadata: Missing data field in json!");
-                    sleep(Duration::from_millis(RETRY_DELAY));
+                    sleep(RETRY_DELAY);
                     vpr!("Continuing...");
                     continue
                 }
                 erm!("Error getting metadata: Error converting r to json!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
             Err(_e) => {
                 erm!("Error getting metadata: Unknown error!");
-                sleep(Duration::from_millis(RETRY_DELAY));
+                sleep(RETRY_DELAY);
                 vpr!("Continuing...");
-                continue
             }
         }
     }
-    panic!()
+    panic!("Failed to get metadata after 35 attempts")
 }
 
 pub fn form_track() -> Track {
     let metadata = get_metadata();
-    let progress = get_progress().unwrap_or(0.);
-    let duration = get_duration().unwrap_or(0.);
-    Track::new(metadata, progress, duration)
+    let progress = Duration::from_secs_f64(get_progress().unwrap_or(0.));
+    let duration = Duration::from_secs_f64(get_duration().unwrap_or(0.));
+    Track::new(&metadata, progress, duration)
 }

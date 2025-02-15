@@ -2,13 +2,17 @@
 //
 // stores flags for global use
 
-use lazy_static::lazy_static;
-use std::sync::Mutex;
+use std::sync::{
+    LazyLock,
+    atomic::{AtomicBool, Ordering}
+};
 
-lazy_static! {
-    pub static ref VERBOSE: Mutex<bool> = Mutex::new(false);
-}
+pub static VERBOSE: LazyLock<AtomicBool> = LazyLock::new(|| AtomicBool::new(false));
 
 pub fn set_flags(verbose: bool) {
-    *VERBOSE.lock().unwrap() = verbose;
+    VERBOSE.store(verbose, Ordering::Relaxed);
+}
+
+pub fn is_verbose() -> bool {
+    VERBOSE.load(Ordering::Relaxed)
 }
