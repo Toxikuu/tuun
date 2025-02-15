@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "0.5.6" # updated to ureq 3
+version = "0.6.0" # major refactoring && enforced better code quality with clippy
 edition = "2024"
 
 [dependencies]
