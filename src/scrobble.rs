@@ -73,16 +73,12 @@ pub fn tfm_scrobble(track: &Track) {
 
     let link = format!("{}/scrobble", CONFIG.tuunfm.link);
     let response = ureq::post(&link)
-        .set("Content-Type", "application/json")
+        .content_type("application/json")
         .send_json(payload);
 
     match response {
-        Ok(r) => {
-            erm!("Response: {}", r.into_string().unwrap_or_else(|_| "No body".to_string()));
-        }
-        Err(e) => {
-            erm!("Error: {}", e);
-        }
+        Ok(r) => vpr!("Response: {r:#?}"),
+        Err(e) => erm!("Response error: {e}"),
     }
 }
 
