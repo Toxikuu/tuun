@@ -23,9 +23,12 @@ IDEAS
 
     Support queueing playlists and launching with a specific one
 
+    Use configure and makefiles
+        Configure would be used to abstract rust features and set stuff like songdir
+
 ROADMAP
 
-    Features for Tuun-1.0.0
+    Features for first proper release
         [-] solid install script
         [-] basic documentation
         [-] more testing
