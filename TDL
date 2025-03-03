@@ -1,25 +1,31 @@
-# Project: tuun
+# Project: Tuun
 
 TODO
 
-    Actually have good logs
-
-    Add support for queueing entire playlists
-        (and launching with a specific playlist)
+    Add a debug feature but otherwise disable verbose output
 
 WIP
 
+    Merge this branch with master
 
 DONEISH
 
-    Add support for launching from q.sh
-        useful if you want to play a specific song
+    Support launching from q.sh
 
-    Add loop support
-        mostly just for scrobbling
+    Loop support
 
-    Add tuunfm support
-
-    Add config.toml
+    Config.toml
 
 DROPPED
+
+
+IDEAS
+
+    Support queueing playlists and launching with a specific one
+
+ROADMAP
+
+    Features for Tuun-1.0.0
+        [-] solid install script
+        [-] basic documentation
+        [-] more testing

@@ -1,110 +1,79 @@
-// main.rs
-
-#![deny(
-    clippy::perf,
-    clippy::todo,
-    clippy::complexity,
-)]
-#![warn(
-    clippy::all,
-    clippy::pedantic,
-    clippy::nursery,
-    // clippy::unwrap_used,
-    // clippy::expect_used,
-    // clippy::panic,
-    unused,
-    // missing_docs,
-    // clippy::cargo,
-)]
-
-use globals::CONFIG;
-use delay::execute_after;
+use anyhow::Result;
+use config::Config;
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
-use track::Track;
-use std::io::{self, Write};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use std::thread::sleep;
+use hotkeys::register_global_hotkey_handler;
+use once_cell::sync::Lazy;
+use std::{
+    env,
+    fs,
+    process::{Command, Stdio},
+    sync::{LazyLock, Mutex}
+};
+use rustfm_scrobble::Scrobbler;
 
 mod config;
-mod delay;
-mod flags;
-mod globals;
-mod macros;
+mod hotkeys;
+mod integrations;
 mod mpv;
-mod rpc;
-mod scrobble;
-mod track;
+mod structs;
 
-fn main() {
-    print!("\x1b[?25l"); // hide cursor
-    io::stdout().flush().expect("Failed to flush stdout");
-    flags::set_flags(CONFIG.general.verbose);
-    mpv::launch_mpv();
-    let client = Arc::new(Mutex::new(
-        DiscordIpcClient::new(&CONFIG.discord.client_id).unwrap()
-    ));
-    client.lock().unwrap().connect().unwrap();
+pub static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);
+pub static RPC_CLIENT: LazyLock<Mutex<DiscordIpcClient>> = LazyLock::new(|| Mutex::new(DiscordIpcClient::new(&CONFIG.discord.client_id).expect("Invalid discord client id")));
+pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(None));
 
-    let mut current_track = String::new();
-    let mut scrobble_task: Option<Arc<Mutex<bool>>> = None;
-    let mut elapsed_time = Duration::ZERO;
+#[tokio::main]
+async fn main() -> Result<()> {
+    RPC_CLIENT.lock().unwrap().connect().unwrap();
 
-    loop {
-        let track = mpv::form_track();
-        track.display();
-        sleep(CONFIG.general.polling_rate_dur);
-        
-        if Track::is_paused() == Some(true) { continue }
-        let track_title = track.title.clone();
-
-        if current_track != track_title {
-            elapsed_time = Duration::ZERO;
-
-            if let Some(cancelled) = &scrobble_task {
-                *cancelled.lock().unwrap() = true;
-                erm!("Cancelled scrobble task for '{}'", current_track);
-            }
-
-            rpc::set(&track, &client).unwrap_or_else(|_|
-                erm!("Rip discord ipc socket 😔")
-            );
-
-            let scrobble_delay = track.duration.mul_f64(0.25);
-            vpr!("Scrobbling in {:#?} seconds", scrobble_delay);
-            
-            scrobble_task = Some(execute_after(
-                scrobble_delay,
-                move || scrobble::scrobble(&track)
-            ));
-
-            current_track = track_title;
-            continue
+    // authenticate scrobbler in the background
+    tokio::spawn(async {
+        if let Err(e) = integrations::authenticate_scrobbler().await {
+            eprintln!("Error during scrobbler authentication: {e:#?}");
         }
+    });
 
-        if Track::is_looped() == Some(true) {
-            vpr!("Detected track as looped");
-
-            elapsed_time += CONFIG.general.polling_rate_dur;
-
-            if elapsed_time >= track.duration {
-                elapsed_time = Duration::ZERO;
-
-                if let Some(cancelled) = &scrobble_task {
-                    *cancelled.lock().unwrap() = true;
-                    erm!("Cancelled previous scrobble task for looped '{}'", current_track);
-                }
-
-                let track_copy = track.clone();
-
-                let scrobble_delay = track.duration.mul_f64(0.25);
-                vpr!("Scrobbling looped track in {:#?} seconds", scrobble_delay);
-
-                scrobble_task = Some(execute_after(
-                    scrobble_delay,
-                    move || scrobble::scrobble(&track_copy),
-                ));
-            }
-        }
+    if should_start_tuunfm() {
+        start_process("tuunfm").await;
     }
+
+    tokio::spawn(async {
+        mpv::launch().await;
+        mpv::connect().await.unwrap();
+    });
+
+    register_global_hotkey_handler().await;
+
+    Ok(())
+}
+
+fn is_process_running(process: &str) -> bool {
+    Command::new("pgrep")
+        .args(["-x", process])
+        .stdout(Stdio::null())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+async fn start_process(process: &str) {
+    if !is_process_running(process) {
+        if let Err(e) = Command::new(process).spawn() {
+            eprintln!("Failed to start {process}: {e}");
+        }
+    } else {
+        eprintln!("{process} is already running")
+    }
+}
+
+fn should_start_tuunfm() -> bool {
+    let home = env::var("HOME").expect("HOME environment variable not set");
+    let config_path = format!("{home}/.config/tuun/config.toml");
+    let config_content = fs::read_to_string(&config_path).expect("Missing config at ~/.config/tuun/config.toml");
+
+    let parsed = config_content.parse::<toml::Value>().expect("Invalid config");
+
+    if let Some(tfm) = parsed.get("tuunfm") {
+        return tfm.get("used").and_then(|v| v.as_bool()).unwrap_or(false)
+    }
+    false
 }

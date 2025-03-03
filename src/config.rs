@@ -3,9 +3,9 @@
 // responsible for handling config.toml
 
 use serde::Deserialize;
-use std::{fs, time::Duration};
+use std::fs;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Config {
     pub lastfm: LastFMConfig,
     pub discord: DiscordConfig,
@@ -13,7 +13,7 @@ pub struct Config {
     pub tuunfm: TuunFMConfig,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct LastFMConfig {
     pub used: bool,
     pub apikey: String,
@@ -22,23 +22,21 @@ pub struct LastFMConfig {
     pub password: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct DiscordConfig {
     pub used: bool,
     pub client_id: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GeneralConfig {
     pub verbose: bool,
     pub socket: String,
+    pub music_dir: String,
     pub playlist: String,
-    polling_rate: u64,
-    #[serde(skip)]
-    pub polling_rate_dur: Duration,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct TuunFMConfig {
     pub used: bool,
     pub link: String,
@@ -49,10 +47,6 @@ impl Config {
         let home_dir = dirs::home_dir().expect("Couldn't find home directory");
         let config_path = home_dir.join(".config/tuun/config.toml");
         let config_str = fs::read_to_string(config_path).expect("Couldn't find config.toml");
-        let mut config: Self = toml::de::from_str(&config_str).expect("Invalid config");
-
-        config.general.polling_rate_dur = Duration::from_millis(config.general.polling_rate);
-
-        config
+        toml::de::from_str(&config_str).expect("Invalid config")
     }
 }

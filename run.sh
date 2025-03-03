@@ -1,15 +1,19 @@
 #!/bin/bash
 
-if grep -A1 tuunfm ~/.config/tuun/config.toml | grep -q true; then
-  if ! pgrep -x tuunfm; then
-    tuunfm &
-  else
-    echo "tuunfm is already running!" >&2
-  fi
-fi
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-if ! pgrep -x tuun; then
-  tuun "$@"
-else
-  echo "tuun is already running!" >&2
-fi
+cleanup() {
+    rm -f "$HOME/Music/Playlists/queue.tpl"
+    rm -f "/tmp/tuun.lock"
+    pkill -x tuun
+    pkill -x tuunfm
+}
+
+trap cleanup EXIT
+
+[[ -e "/tmp/tuun.lock" ]] && {
+    echo "tuun is already running!" >&2
+    exit 1
+}
+
+"$SCRIPT_DIR"/target/release/tuun "$@"
