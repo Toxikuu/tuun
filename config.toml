@@ -1,0 +1,19 @@
+[lastfm]
+used = true
+apikey = "<your lastfm api key>"
+secret = "<your lastfm secret>"
+user = "<your lastfm username>"
+password = "<your lastfm password>"
+
+[discord]
+used = true
+client_id = "1272345557276295310" # i think mine should work fine here
+
+[general]
+music_dir = "/home/t/Music"
+playlist = "/home/t/Music/Playlists/all.tpl"
+
+# tuunfm is currently not supported
+# [tuunfm]
+# used = true
+# link = "http://127.0.0.1:8080"
