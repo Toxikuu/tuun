@@ -3,7 +3,7 @@
 // responsible for handling config.toml
 
 use serde::Deserialize;
-use std::fs;
+use std::{env, fs, path::PathBuf};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -44,7 +44,7 @@ pub struct TuunFMConfig {
 
 impl Config {
     pub fn load() -> Self {
-        let home_dir = dirs::home_dir().expect("Couldn't find home directory");
+        let home_dir = PathBuf::from(env::var("HOME").expect("Couldn't find home directory"));
         let config_path = home_dir.join(".config/tuun/config.toml");
         let config_str = fs::read_to_string(config_path).expect("Couldn't find config.toml");
         toml::de::from_str(&config_str).expect("Invalid config")

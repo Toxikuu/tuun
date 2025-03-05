@@ -6,9 +6,11 @@ TODO
 
 WIP
 
+DONEISH
+
     Merge this branch with master
 
-DONEISH
+    Drop dirs dependency
 
     Support launching from q.sh
 
