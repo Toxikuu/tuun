@@ -2,7 +2,7 @@ cargo-features = ["edition2024"]
 
 [package]
 name = "tuun"
-version = "1.0.0"
+version = "1.0.1" # dropped dirs dependency
 edition = "2024"
 
 [dependencies]
