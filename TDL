@@ -2,6 +2,10 @@
 
 TODO
 
+    Add a field Vol that tracks mpv volume
+
+    Add a field Img containing the link to the album cover
+
     Add a debug feature but otherwise disable verbose output
 
 WIP
