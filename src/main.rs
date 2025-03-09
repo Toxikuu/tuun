@@ -23,7 +23,13 @@ pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(N
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    RPC_CLIENT.lock().unwrap().connect().unwrap();
+    for a in 1..=8 {
+        if RPC_CLIENT.lock().unwrap().connect().is_ok() {
+            break
+        } else {
+            eprintln!("Retrying Discord IPC connection ({a}/8)")
+        }
+    }
 
     // authenticate scrobbler in the background
     tokio::spawn(async {
