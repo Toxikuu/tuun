@@ -7,6 +7,7 @@ cleanup() {
     rm -f "/tmp/tuun.lock"
     pkill -x tuun
     pkill -x tuunfm
+    tput cvvis
 }
 
 trap cleanup EXIT
@@ -16,4 +17,5 @@ trap cleanup EXIT
     exit 1
 }
 
+tput civis
 "$SCRIPT_DIR"/target/release/tuun "$@"
