@@ -222,7 +222,7 @@ async fn handle_properties(json: Value) {
 pub async fn launch() {
     Command::new("mpv")
         .arg("--shuffle")
-        // .arg("--really-quiet")
+        .arg("--really-quiet")
         .arg("--geometry=350x350+1400+80")
         .arg("--title='tuun-mpv'")
         .arg("--input-ipc-server=/tmp/mpvsocket")
@@ -230,9 +230,9 @@ pub async fn launch() {
         .spawn()
         .expect("Failed to launch mpv");
 
-    for a in 1..=100 {
-        sleep(Duration::from_millis(32)).await;
-        println!("Polling mpv socket {a}/100...");
+    for a in 1..=32 {
+        sleep(Duration::from_millis(128)).await;
+        println!("Polling mpv socket {a}/32...");
         if fs::metadata("/tmp/mpvsocket").is_ok() {
             break
         }
