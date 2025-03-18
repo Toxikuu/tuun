@@ -6,10 +6,12 @@ use once_cell::sync::Lazy;
 use std::{
     env,
     fs,
+    io::ErrorKind as IOE,
     process::{Command, Stdio},
     sync::{LazyLock, Mutex}
 };
 use rustfm_scrobble::Scrobbler;
+use traits::Permit;
 
 mod config;
 mod hotkeys;
@@ -17,6 +19,7 @@ mod integrations;
 mod macros;
 mod mpv;
 mod structs;
+mod traits;
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);
 pub static RPC_CLIENT: LazyLock<Mutex<DiscordIpcClient>> = LazyLock::new(|| Mutex::new(DiscordIpcClient::new(&CONFIG.discord.client_id).expect("Invalid discord client id")));
@@ -24,6 +27,18 @@ pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(N
 
 #[tokio::main]
 async fn main() -> Result<()> {
+
+    // create lock
+    if let Err(e) = fs::create_dir("/tmp/tuun")
+        .permit(|e| e.kind() == IOE::AlreadyExists)
+    {
+        eprintln!("Failed to create /tmp/tuun: {e}")
+    }
+
+    if let Err(e) = fs::write("/tmp/tuun/tuun.lock", b"") {
+        eprintln!("Failed to write to tuun.lock: {e}")
+    }
+
     for a in 1..=8 {
         if RPC_CLIENT.lock().unwrap().connect().is_ok() {
             break
