@@ -8,13 +8,20 @@ use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
+    #[serde(default)]
     pub lastfm: LastFMConfig,
+
+    #[serde(default)]
     pub discord: DiscordConfig,
+
+    #[serde(default)]
     pub general: GeneralConfig,
+
+    #[serde(default)]
     pub tuunfm: TuunFMConfig,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct LastFMConfig {
     pub used: bool,
     pub apikey: String,
@@ -25,22 +32,61 @@ pub struct LastFMConfig {
 
 #[derive(Deserialize, Debug)]
 pub struct DiscordConfig {
+    #[serde(default)]
     pub used: bool,
+
+    #[serde(default)]
     pub client_id: String,
+}
+
+impl Default for DiscordConfig {
+    fn default() -> Self {
+        Self {
+            used: true,
+            client_id: "1272345557276295310".to_owned()
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
 pub struct GeneralConfig {
-    pub verbose: bool,
-    pub socket: String,
-    pub music_dir: String,
+    #[serde(default)]
+    pub shuffle: bool,
+
+    #[serde(default)]
     pub playlist: String,
+
+    #[serde(default)]
+    pub music_dir: String,
+}
+
+impl Default for GeneralConfig {
+    fn default() -> Self {
+        Self {
+            shuffle: true,
+            playlist: "/tmp/tuun/all.tpl".to_owned(),
+            // TODO: Initialize $HOME once somewhere and just reuse it
+            music_dir: format!("{}/Music", env::var("HOME").expect("Couldn't find home directory ($HOME is not set)")),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
 pub struct TuunFMConfig {
+    #[serde(default)]
     pub used: bool,
+
+    #[serde(default)]
     pub link: String,
+}
+
+impl Default for TuunFMConfig {
+    fn default() -> Self {
+        Self {
+            used: false,
+            link: "http://127.0.0.1:8080".to_owned(),
+        }
+    }
 }
 
 impl Config {
