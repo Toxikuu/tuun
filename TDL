@@ -2,9 +2,22 @@
 
 TODO
 
-    Add a field Vol that tracks mpv volume
+    LRCLIB integration
+        Only do this for mp3s
+        I'm thinking check if lyrics exist as a metadata field (USLT and SLST with id3)
+        If they don't exist, request the lyrics and save them to the relevant field(s)
+        Have another terminal window open up and display the lyrics (centered)
 
-    Add a field Img containing the link to the album cover
+    Vendor rustfm_scrobble
+        Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
+        Easier than vendoring it myself
+
+    Add a utility, call it tm, for adding arbitrary metadata
+        (ideally open all the fields in $EDITOR and allow editing)
+
+    Allow field configuration in config.toml
+
+    Add a field Vol that tracks mpv volume
 
     Add a debug feature but otherwise disable verbose output
 
@@ -24,6 +37,8 @@ DONEISH
 
 DROPPED
 
+    Add a field Img containing the link to the album cover
+        I don't like how it looks but I might add it back later
 
 IDEAS
 
