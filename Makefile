@@ -6,7 +6,7 @@ build:
 clean:
 	cargo clean
 
-install: build
+install:
 	install -Dm644 ./config.toml /usr/share/tuun/default_config.toml
 	install -Dm755 target/release/tuun /usr/libexec/tuun
 	install -Dm755 tuun.sh /usr/bin/tuun
