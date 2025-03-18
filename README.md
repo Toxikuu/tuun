@@ -7,10 +7,24 @@ featuring async!
 
 **Incomplete List of Dependencies**
 - mpv -> Required. Used to play and control music and display album art.
-- fzf -> Recommended. Necessary if you want to be able to queue songs with
-q.sh.
+- fzf -> Recommended. Necessary for queueing with quu.
 - alacritty -> Recommended. You can use whatever terminal you like, but you'll
-have to edit the shell scripts. Necessary for queueing with q.sh.
+have to edit the shell scripts. Necessary for queueing with quu.
+
+## Installation
+I've decided to use Makefiles to simplify stuff. This should be all it takes:
+```bash
+make
+sudo make install
+```
 
 ## Usage
-Run run.sh or q.sh. Feel free to add wm-level keybinds for these.
+Run `tuun`.
+
+*Pro tip: You should make keybinds for tuun and quu in your window manager.*
+
+## Uninstallation
+If for whatever reason you're not convinced (and you still have the sources):
+```bash
+sudo make uninstall
+```
