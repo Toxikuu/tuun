@@ -1,17 +1,18 @@
-[lastfm]
-used = true
-apikey = "<your lastfm api key>"
-secret = "<your lastfm secret>"
-user = "<your lastfm username>"
-password = "<your lastfm password>"
+# [lastfm]
+# used = true
+# apikey = "<your lastfm api key>"
+# secret = "<your lastfm secret>"
+# user = "<your lastfm username>"
+# password = "<your lastfm password>"
 
-[discord]
-used = true
-client_id = "1272345557276295310" # i think mine should work fine here
+# [discord]
+# used = true  # defaults to true
+# client_id = "1272345557276295310"  # you can specify a custom one if you like; the default is mine
 
-[general]
-music_dir = "/home/t/Music"
-playlist = "/home/t/Music/Playlists/all.tpl"
+# [general]
+# shuffle = true  # defaults to true
+# music_dir = "~/Music"  # defaults to ~/Music
+# playlist = "~/Music/Playlists/new.tpl"  # plays all tracks in the music dir if not specified
 
 # tuunfm is currently not supported
 # [tuunfm]
