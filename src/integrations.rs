@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use discord_rich_presence::{activity, DiscordIpc};
-use crate::{CONFIG, RPC_CLIENT, SCROBBLER};
+use crate::{p, CONFIG, RPC_CLIENT, SCROBBLER};
 use crate::structs::{Track, LastFM};
 use rustfm_scrobble::{Scrobble, Scrobbler};
 use std::path::Path;
@@ -48,7 +48,9 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
     tokio::task::spawn_blocking(move || {
         let mut client = RPC_CLIENT.lock().unwrap();
 
-        client.clear_activity().expect("Failed to clear activity");
+        if let Err(e) = client.clear_activity() {
+            // log::error!("Failed to clear activity: {e:#}");
+        }
         let assets = activity::Assets::new()
             .large_image(&track.arturl)
             .large_text(&track.album)
@@ -66,8 +68,11 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
             .activity_type(activity::ActivityType::Listening)
             .timestamps(timestamp);
 
-        println!("Setting Discord RPC for {track:#?}");
-        client.set_activity(payload).expect("Failed to send payload");
+        p!("Setting Discord RPC for {track:#?}");
+
+        if let Err(e) = client.set_activity(payload) {
+            // log::error!("Failed set activity: {e:#}");
+        }
         Ok(())
     }).await?
 }

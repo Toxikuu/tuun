@@ -18,7 +18,7 @@ use tokio::{
     time::{sleep, Duration},
 };
 
-use crate::{integrations::lastfm_scrobble, structs::Track, CONFIG};
+use crate::{integrations::lastfm_scrobble, structs::Track, CONFIG, p};
 
 const  SOCK_PATH: &str = "/tmp/mpvsocket";
 pub static LOOPED:    AtomicBool = AtomicBool::new(false);
@@ -122,7 +122,7 @@ async fn handle_events(json: Value) {
     if let Some(event) = json.get("event").and_then(|v| v.as_str()) {
         match event {
             "start-file" => {
-                println!(" //// NEW SONG STARTED")
+                p!(" //// NEW SONG STARTED")
             },
             "end-file" => {
                 if let Some(reason) = json.get("reason").and_then(|v| v.as_str()) {
@@ -130,7 +130,7 @@ async fn handle_events(json: Value) {
                         println!(" //// MPV QUIT");
                         exit(0)
                     } else {
-                        println!(" //// EOF WITH REASON: {reason}");
+                        p!(" //// EOF WITH REASON: {reason}");
                     }
                 }
             },
@@ -139,7 +139,7 @@ async fn handle_events(json: Value) {
             }
             _ => {
                 // should only be included in verbose mode
-                println!("Received event: {event:#}")
+                p!("Received event: {event:#}")
             }
         }
     }
@@ -151,19 +151,19 @@ async fn handle_properties(json: Value) {
     if let Some(property) = json.get("name").and_then(|v| v.as_str()) {
         match property {
             "filename" => {
-                println!(" //// FILENAME CHANGED");
-                println!(" //// Filename property: {json:#}");
+                p!(" //// FILENAME CHANGED");
+                p!(" //// Filename property: {json:#}");
             },
             "pause" => {
-                println!(" //// PAUSE TOGGLED");
-                println!(" //// Pause property: {json:#}");
+                p!(" //// PAUSE TOGGLED");
+                p!(" //// Pause property: {json:#}");
                 if let Some(paused) = json.get("data").and_then(|v| v.as_bool()) {
                     PAUSED.store(paused, Ordering::Relaxed);
                 };
             },
             "loop-file" => {
-                println!(" //// LOOP TOGGLED");
-                println!(" //// Loop property: {json:#}");
+                p!(" //// LOOP TOGGLED");
+                p!(" //// Loop property: {json:#}");
                 if let Some(looped) = json.get("data").and_then(|v| v.as_bool()) {
                     LOOPED.store(looped, Ordering::Relaxed);
                 };
@@ -174,8 +174,8 @@ async fn handle_properties(json: Value) {
                 };
             },
             "mute" => {
-                println!(" //// MUTE TOGGLED");
-                println!(" //// Mute property: {json:#}");
+                p!(" //// MUTE TOGGLED");
+                p!(" //// Mute property: {json:#}");
             },
             "playback-time" => {
                 let mut track = TRACK.lock().await;
@@ -206,14 +206,14 @@ async fn handle_properties(json: Value) {
                 }
             },
             "metadata" => {
-                println!(" //// METADATA CHANGED");
-                println!(" //// Metadata property: {json:#}");
+                p!(" //// METADATA CHANGED");
+                p!(" //// Metadata property: {json:#}");
                 let mut track = TRACK.lock().await;
                 track.update_metadata(&json).await;
                 track.rpc().await;
             },
             _ => {
-                println!("Received property: {json:#}")
+                p!("Received property: {json:#}")
             }
         }
     }
@@ -232,7 +232,7 @@ pub async fn launch() {
 
     for a in 1..=32 {
         sleep(Duration::from_millis(128)).await;
-        println!("Polling mpv socket {a}/32...");
+        p!("Polling mpv socket {a}/32...");
         if fs::metadata("/tmp/mpvsocket").is_ok() {
             break
         }
@@ -272,7 +272,7 @@ async fn queue() -> Result<bool> {
         let song = song.trim();
         let command = format!(r#"{{ "command": ["loadfile", "{song}", "insert-next"] }}"#);
         send_command(&command).await?;
-        println!("Queued {song}");
+        p!("Queued {song}");
     }
 
     fs::remove_file(queue)?;

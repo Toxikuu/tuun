@@ -14,6 +14,7 @@ use rustfm_scrobble::Scrobbler;
 mod config;
 mod hotkeys;
 mod integrations;
+mod macros;
 mod mpv;
 mod structs;
 

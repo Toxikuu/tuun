@@ -23,7 +23,7 @@ impl Default for Track {
             album: String::new(),
             date: String::new(),
             progress: 0.0,
-            duration: 1000., // Custom default duration
+            duration: 1000.,
         }
     }
 }
@@ -98,15 +98,9 @@ impl Track {
         io::stdout().flush().unwrap();
     }
 
-    // pub async fn scrobble(&self) {
-    //     if let Err(e) = integrations::lastfm_scrobble(self.clone()).await {
-    //         println!("Error scrobbling: {e:#?}")
-    //     }
-    // }
-
     pub async fn rpc(&self) {
         if let Err(e) = integrations::discord_rpc(self.clone()).await {
-            println!("Error setting discord rpc: {e:#?}")
+            eprintln!("Error setting discord rpc: {e:#?}")
         }
     }
 
