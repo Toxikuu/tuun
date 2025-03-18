@@ -1,10 +1,11 @@
 #!/bin/bash
 
-[[ -e ~/.config/tuun/config.toml ]] || {
-    echo "Missing config at ~/.config/tuun/config.toml"
-    exit 1
-}
+# [[ -e ~/.config/tuun/config.toml ]] || {
+#     echo "Missing config at ~/.config/tuun/config.toml"
+#     exit 1
+# }
 
+# TODO: Make this easily customizable from the config
 SONG_DIR="$HOME/Music"
 SCRIPTDIR="$(dirname "$(realpath "$0")")"
 
@@ -44,9 +45,9 @@ if [[ -z "$SELECTED_NAMES" ]]; then
     exit 0
 fi
 
-echo "$SELECTED_NAMES" > "$SONG_DIR/Playlists/queue.tpl"
+echo "$SELECTED_NAMES" > "/tmp/tuun/quu.tpl"
 
 if ! pgrep -x 'tuun' > /dev/null 2>&1; then
-    alacritty --class tuun --hold -e "$SCRIPTDIR/run.sh" &
+    alacritty --class tuun --hold -e /usr/bin/tuun &
     exit 0
 fi
