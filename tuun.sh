@@ -9,7 +9,6 @@ fi
 
 cleanup() {
     rm -f "/tmp/tuun/quu.tpl"
-    rm -f "/tmp/tuun/all.tpl"
     rm -f "/tmp/tuun/tuun.lock"
     pkill -x tuun
     pkill -x tuunfm
