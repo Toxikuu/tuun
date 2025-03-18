@@ -20,12 +20,12 @@ use tokio::{
 
 use crate::{integrations::lastfm_scrobble, structs::Track, CONFIG, p};
 
-const  SOCK_PATH: &str = "/tmp/mpvsocket";
+const  SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
 pub static LOOPED:    AtomicBool = AtomicBool::new(false);
 pub static PAUSED:    AtomicBool = AtomicBool::new(false);
 static FRESH:         AtomicBool = AtomicBool::new(false);
 static TRACK:         Lazy<Arc<Mutex<Track>>> = Lazy::new(|| Arc::new(Mutex::new(Track::default())));
-static QUEUE:         LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from(&CONFIG.general.playlist).with_file_name("queue.tpl"));
+static QUEUE:         LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("/tmp/tuun/quu.tpl"));
 
 pub async fn connect() -> Result<()> {
     // Connect to mpv's socket
@@ -195,14 +195,16 @@ async fn handle_properties(json: Value) {
                 if time >= (track.duration / 4.) && FRESH.load(Ordering::Relaxed) {
                     FRESH.store(false, Ordering::Relaxed);
 
-                    let track_copy = track.clone();
-                    tokio::spawn(async move {
-                        if let Err(e) = tokio::task::block_in_place(|| {
-                            lastfm_scrobble(track_copy)
-                        }) {
-                            eprintln!("Failed to scrobble track: {e:#?}")
-                        }
-                    });
+                    if CONFIG.lastfm.used {
+                        let track_copy = track.clone();
+                        tokio::spawn(async move {
+                            if let Err(e) = tokio::task::block_in_place(|| {
+                                lastfm_scrobble(track_copy)
+                            }) {
+                                eprintln!("Failed to scrobble track: {e:#?}")
+                            }
+                        });
+                    }
                 }
             },
             "metadata" => {
@@ -221,11 +223,17 @@ async fn handle_properties(json: Value) {
 
 pub async fn launch() {
     Command::new("mpv")
-        .arg("--shuffle")
+        .arg(
+            if CONFIG.general.shuffle {
+                "--shuffle=yes"
+            } else {
+                "--shuffle=no"
+            }
+        )
         .arg("--really-quiet")
         .arg("--geometry=350x350+1400+80")
         .arg("--title='tuun-mpv'")
-        .arg("--input-ipc-server=/tmp/mpvsocket")
+        .arg(format!("--input-ipc-server={SOCK_PATH}"))
         .args(prequeue())
         .spawn()
         .expect("Failed to launch mpv");
@@ -233,30 +241,29 @@ pub async fn launch() {
     for a in 1..=32 {
         sleep(Duration::from_millis(128)).await;
         p!("Polling mpv socket {a}/32...");
-        if fs::metadata("/tmp/mpvsocket").is_ok() {
+        if fs::metadata(SOCK_PATH).is_ok() {
             break
         }
     }
 
     match queue().await {
-        Ok(true) => {
-            if let Err(e) = send_command(r#"{ "command": ["playlist-next"] }"#).await {
-                eprintln!("Failed to skip track for queue start: {e}")
+        Ok(queued) => {
+            if queued {
+                if let Err(e) = send_command(r#"{ "command": ["playlist-next"] }"#).await {
+                    eprintln!("Failed to skip track for queue start: {e}")
+                }
             }
         },
-        Ok(false) => {},
         Err(e) => eprintln!("Failed to queue tracks from start: {e}")
     }
 }
 
 fn prequeue() -> Vec<String> {
-    let playlist = PathBuf::from(&CONFIG.general.playlist);
-    let queue = playlist.with_file_name("queue.tpl");
-    if queue.exists() {
-        // vec![format!("--playlist={}", queue.display()), format!("--playlist={}", playlist.display())]
-        vec![format!("--playlist={}", playlist.display())]
+    let playlist = &CONFIG.general.playlist;
+    if QUEUE.exists() {
+        vec![format!("--playlist={}", QUEUE.display()), format!("--playlist={playlist}")]
     } else {
-        vec![format!("--playlist={}", playlist.display())]
+        vec![format!("--playlist={playlist}")]
     }
 }
 

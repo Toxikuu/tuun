@@ -18,6 +18,7 @@ mod hotkeys;
 mod integrations;
 mod macros;
 mod mpv;
+mod playlists;
 mod structs;
 mod traits;
 
@@ -39,6 +40,8 @@ async fn main() -> Result<()> {
         eprintln!("Failed to write to tuun.lock: {e}")
     }
 
+    playlists::create_all_playlist();
+
     for a in 1..=8 {
         if RPC_CLIENT.lock().unwrap().connect().is_ok() {
             break
@@ -48,11 +51,13 @@ async fn main() -> Result<()> {
     }
 
     // authenticate scrobbler in the background
-    tokio::spawn(async {
-        if let Err(e) = integrations::authenticate_scrobbler().await {
-            eprintln!("Error during scrobbler authentication: {e:#?}");
-        }
-    });
+    if CONFIG.lastfm.used {
+        tokio::spawn(async {
+            if let Err(e) = integrations::authenticate_lastfm_scrobbler().await {
+                eprintln!("Error during scrobbler authentication: {e:#?}");
+            }
+        });
+    }
 
     if should_start_tuunfm() {
         start_process("tuunfm").await;

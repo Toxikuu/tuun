@@ -6,11 +6,19 @@ use rustfm_scrobble::{Scrobble, Scrobbler};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub async fn authenticate_scrobbler() -> Result<()> {
+pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
     let mut scrobbler_lock = crate::SCROBBLER.lock().unwrap();
 
     if scrobbler_lock.is_none() {
         let lfm = LastFM::new();
+
+        if lfm.apikey.is_empty() 
+        || lfm.secret.is_empty()
+        || lfm.username.is_empty()
+        || lfm.password.is_empty()
+        {
+            bail!("Cowardly refusing to authenticate without credentials")
+        }
 
         let mut scrobbler = Scrobbler::new(lfm.apikey, lfm.secret);
         scrobbler.authenticate_with_password(lfm.username, lfm.password)?;
