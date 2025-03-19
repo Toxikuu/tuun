@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "2.1.0" # logging, removed debug feature
+version = "2.1.1" # tweaked logs, added now playing log
 edition = "2024"
 
 [dependencies]

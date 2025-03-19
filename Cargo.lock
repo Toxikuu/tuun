@@ -2051,7 +2051,7 @@ checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 
 [[package]]
 name = "tuun"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "anyhow",
  "discord-rich-presence",
