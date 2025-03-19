@@ -160,7 +160,7 @@ async fn handle_properties(json: Value) {
     if let Some(property) = json.get("name").and_then(|v| v.as_str()) {
         match property {
             "filename" => {
-                info!("MPV Property: Filename changed");
+                debug!("MPV Property: Filename changed");
                 debug!("Filename property: {json:#}");
             },
             "pause" => {
@@ -224,11 +224,12 @@ async fn handle_properties(json: Value) {
                 }
             },
             "metadata" => {
-                info!("MPV Property: Metadata changed");
+                debug!("MPV Property: Metadata changed");
                 debug!("Metadata property: {json:#}");
 
                 let mut track = TRACK.lock().await;
                 track.update_metadata(&json).await;
+                info!("Now playing '{track}'");
                 track.rpc().await;
             },
             _ => {

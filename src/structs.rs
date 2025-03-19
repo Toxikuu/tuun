@@ -1,5 +1,5 @@
 use serde_json::Value;
-use std::io::{self, Write};
+use std::{fmt, io::{self, Write}};
 
 use crate::{integrations, mpv::send_command, CONFIG};
 use tracing::{instrument, trace, debug, warn, error};
@@ -131,5 +131,11 @@ impl Track {
         self.album    == String::with_capacity(0) &&
         self.arturl   == String::with_capacity(0) &&
         self.date     == String::with_capacity(0)
+    }
+}
+
+impl fmt::Display for Track {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} - {}", self.artist, self.title)
     }
 }
