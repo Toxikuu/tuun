@@ -2,6 +2,7 @@ use serde_json::Value;
 use std::io::{self, Write};
 
 use crate::{integrations, mpv::send_command, CONFIG};
+use tracing::{instrument, trace, debug, warn, error};
 
 #[derive(Debug, Clone)]
 pub struct Track {
@@ -48,9 +49,20 @@ impl LastFM<'_> {
 }
 
 impl Track {
+    #[instrument(level = "debug", skip(metadata))]
     pub async fn update_metadata(&mut self, metadata: &Value) {
-        let Some(data) = metadata.get("data") else { return };
-        let data = data.as_object().unwrap();
+        let Some(data) = metadata.get("data") else {
+            warn!("Failed to get metadata from {metadata:#}");
+            warn!("Not updating metadata");
+            return
+        };
+
+        let Some(data) = data.as_object() else {
+            warn!("Could not convert {data:#} to json");
+            warn!("Not updating metadata");
+            return
+        };
+
         let data: serde_json::Map<String, Value> = data
             .iter()
             .map(|(k, v)| (k.to_lowercase(), v.clone()))
@@ -58,32 +70,38 @@ impl Track {
 
         // duration is not technically metadata but i count it as such
         let mut duration = None;
-        for _ in 0..=7 {
+        for a in 0..=7 {
             duration = send_command(r#"{"command": ["get_property", "duration"]}"#).await.unwrap().get("data").and_then(|v| v.as_f64());
-            if duration.is_some() {
+            if let Some(dur) = duration {
+                debug!("Fetched duration {dur} on attempt {a}");
                 break
             }
         }
+
+        let Some(dur) = duration else {
+            warn!("Failed to fetch duration");
+            warn!("Not updating metadata");
+            return
+        };
 
         self.title  = data.get("title") .and_then(|v| v.as_str()).unwrap_or("<Unknown title>").to_string();
         self.artist = data.get("artist").and_then(|v| v.as_str()).unwrap_or("<Unknown artist>").to_string();
         self.album  = data.get("album") .and_then(|v| v.as_str()).unwrap_or("<Unknown album>").to_string();
         self.date   = data.get("date")  .and_then(|v| v.as_str()).unwrap_or("<Unknown release date>").to_string();
         self.arturl = data.get("arturl").and_then(|v| v.as_str()).unwrap_or("https://i1.sndcdn.com/artworks-000412100175-y1xaip-t500x500.jpg").to_string(); // cute cat picture when in doubt
-        self.duration = duration.unwrap()
+        self.duration = dur;
     }
 
     pub async fn update_progress(&mut self, progress: f64) {
         self.progress = progress;
+        trace!("Updated progress to {progress}");
     }
 
-    pub fn debug_self(&self) {
-        println!("{self:#?}")
-    }
-
+    #[instrument]
     pub fn display(&self) {
+        trace!("Displaying track:\n{self:#?}");
         print!("{esc}[2J{esc}[1;1H{esc}[?251", esc = 27 as char);
-        io::stdout().flush().unwrap();
+        if io::stdout().flush().is_err() { return }
         print!(
 "\
 \x1b[36;1mTUUN\x1b[0m
@@ -95,12 +113,13 @@ impl Track {
 \x1b[36;1m05 \x1b[30m::: Prg - \x1b[37m{:.3}/{:.3}\x1b[0m", 
         self.title, self.artist, self.album, self.date, self.progress, self.duration);
         
-        io::stdout().flush().unwrap();
+        let _ = io::stdout().flush();
     }
 
+    #[instrument]
     pub async fn rpc(&self) {
         if let Err(e) = integrations::discord_rpc(self.clone()).await {
-            eprintln!("Error setting discord rpc: {e:#?}")
+            error!("Error setting discord rpc: {e:#?}")
         }
     }
 

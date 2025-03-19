@@ -12,11 +12,13 @@ use std::{
 };
 use rustfm_scrobble::Scrobbler;
 use traits::Permit;
+use tracing::{debug, error, info, warn};
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_appender::rolling;
 
 mod config;
 mod hotkeys;
 mod integrations;
-mod macros;
 mod mpv;
 mod playlists;
 mod structs;
@@ -28,25 +30,42 @@ pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(N
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // set up logging
+    let file_appender = rolling::daily("/tmp/tuun", "tuun.log");
+    let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
+
+    let log_level = env::var("TUUN_LOG_LEVEL").unwrap_or("info".to_string());
+    let filter = EnvFilter::new(format!("{log_level},winit=info,calloop=info,polling=info"));
+    
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(fmt::Layer::new().with_writer(file_writer))
+        .with(fmt::Layer::new().with_writer(std::io::stdout))
+        .init();
+
+    info!("Starting tuun");
 
     // create lock
     if let Err(e) = fs::create_dir("/tmp/tuun")
         .permit(|e| e.kind() == IOE::AlreadyExists)
     {
-        eprintln!("Failed to create /tmp/tuun: {e}")
+        error!("Failed to create /tmp/tuun: {e}")
     }
 
     if let Err(e) = fs::write("/tmp/tuun/tuun.lock", b"") {
-        eprintln!("Failed to write to tuun.lock: {e}")
+        error!("Failed to write to tuun.lock: {e}")
     }
+    info!("Created lock");
 
     playlists::create_all_playlist();
+    info!("Created the all playlist");
 
     for a in 1..=8 {
         if RPC_CLIENT.lock().unwrap().connect().is_ok() {
+            info!("Connected to Discord IPC on attempt {a}");
             break
         } else {
-            eprintln!("Retrying Discord IPC connection ({a}/8)")
+            warn!("Retrying Discord IPC connection ({a}/8)")
         }
     }
 
@@ -54,47 +73,58 @@ async fn main() -> Result<()> {
     if CONFIG.lastfm.used {
         tokio::spawn(async {
             if let Err(e) = integrations::authenticate_lastfm_scrobbler().await {
-                eprintln!("Error during scrobbler authentication: {e:#?}");
+                error!("Error during scrobbler authentication: {e:#?}");
+            } else {
+                info!("Authenticated with lastfm");
             }
         });
     }
 
     if should_start_tuunfm() {
+        info!("Starting tuunfm...");
         start_process("tuunfm").await;
+        info!("Started tuunfm");
     }
 
     tokio::spawn(async {
+        info!("Launching MPV");
         mpv::launch().await;
         mpv::connect().await.unwrap();
     });
 
     register_global_hotkey_handler().await;
+    info!("Registered global hotkey handler");
 
     Ok(())
 }
 
 fn is_process_running(process: &str) -> bool {
-    Command::new("pgrep")
+    let running = Command::new("pgrep")
         .args(["-x", process])
         .stdout(Stdio::null())
         .status()
         .map(|status| status.success())
-        .unwrap_or(false)
+        .unwrap_or(false);
+    debug!(process, running, "Checked if process is running");
+    running
 }
 
 async fn start_process(process: &str) {
     if !is_process_running(process) {
         if let Err(e) = Command::new(process).spawn() {
-            eprintln!("Failed to start {process}: {e}");
+            error!("Failed to start {process}: {e}");
+        } else {
+            info!("Started {process}");
         }
     } else {
-        eprintln!("{process} is already running")
+        warn!("{process} is already running")
     }
 }
 
 fn should_start_tuunfm() -> bool {
     let home = env::var("HOME").expect("HOME environment variable not set");
     let config_path = format!("{home}/.config/tuun/config.toml");
+    info!("Reading config from {config_path}");
     let config_content = fs::read_to_string(&config_path).expect("Missing config at ~/.config/tuun/config.toml");
 
     let parsed = config_content.parse::<toml::Value>().expect("Invalid config");

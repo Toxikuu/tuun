@@ -20,7 +20,7 @@ trap cleanup EXIT
 tput civis
 
 if [[ -e /usr/libexec/tuun ]]; then
-    /usr/libexec/tuun "$@"
+    TUUN_LOG_LEVEL="info" /usr/libexec/tuun "$@"
 else
     echo "Missing tuun at /usr/libexec/tuun" >&2
     echo "Did you run make install?" >&2

@@ -1,11 +1,7 @@
 [package]
 name = "tuun"
-version = "2.0.0" # significant reorganization, misc improvements, better ux
+version = "2.1.0" # logging, removed debug feature
 edition = "2024"
-
-[features]
-default = []
-debug = []
 
 [dependencies]
 anyhow = "1.0.96"
@@ -16,4 +12,7 @@ serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.139"
 tokio = { version = "1.43.0", features = ["full"] }
 toml = "0.8.20"
+tracing = "0.1.41"
+tracing-appender = "0.2.3"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 winit = "0.30.9"

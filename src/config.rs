@@ -5,6 +5,7 @@
 use serde::Deserialize;
 use std::{env, fs};
 use std::path::{Path, PathBuf};
+use tracing::{debug, info, warn, error};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -93,16 +94,29 @@ impl Config {
     pub fn load() -> Self {
         let home_dir = PathBuf::from(env::var("HOME").expect("Couldn't find home directory ($HOME is not set)"));
         let home_dir_str = home_dir.to_string_lossy();
+        debug!("Detected home directory: {home_dir:?}");
 
         let config_dir = home_dir.join(".config").join("tuun");
         let config_path = config_dir.join("config.toml");
 
         if !config_path.exists() {
+            info!("Default config does not exist");
+            info!("Creating it...");
             Self::create_default(&home_dir, &config_path);
         }
 
-        let config_str = fs::read_to_string(config_path).expect("Couldn't find config.toml (even after creating it)");
-        let mut config: Self = toml::de::from_str(&config_str).expect("Invalid syntax in config");
+        let Ok(config_str) = fs::read_to_string(&config_path) else {
+            error!("Couldn't find config.toml at {config_path:?} despite creating it");
+            panic!()
+        };
+
+        let mut config: Self = match toml::de::from_str(&config_str) {
+            Ok(c) => c,
+            Err(e) => {
+                error!("Invalid syntax detected in config");
+                panic!("{e}");
+            }
+        };
 
         // allow ~ in paths in config.toml
         config.general.music_dir = config.general.music_dir.replacen('~', &home_dir_str, 1);
@@ -112,16 +126,23 @@ impl Config {
         config.general.music_dir = config.general.music_dir.replacen("$HOME", &home_dir_str, 1);
         config.general.playlist  = config.general.playlist .replacen("$HOME", &home_dir_str, 1);
 
+        info!("Loaded config");
+        debug!("Config: {config:#?}");
         config
     }
 
     fn create_default(config_dir: &Path, config_path: &Path) {
         let default_config_path = PathBuf::from("/usr/share/tuun/default_config.toml");
+        info!("Copying default config from {default_config_path:?} to {config_path:?}");
 
         if !config_dir.exists() {
-            fs::create_dir_all(config_dir).expect("Failed to create config directory")
+            fs::create_dir_all(config_dir).expect("Failed to create config directory");
+            info!("Created config directory at {config_dir:?}");
         }
 
-        fs::copy(default_config_path, config_path).expect("Failed to copy default config (did you run make install?)");
+        if let Err(e) = fs::copy(&default_config_path, config_path) {
+            error!("Failed to copy default config from {default_config_path:?} to {config_path:?}: {e}");
+            warn!("Did you run make install?")
+        }
     }
 }

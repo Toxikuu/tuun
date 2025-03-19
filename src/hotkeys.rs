@@ -6,8 +6,8 @@ use winit::{
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
 };
-use crate::p;
 use crate::mpv;
+use tracing::{trace, debug, info, warn, error};
 
 #[derive(Default)]
 struct App {
@@ -22,7 +22,7 @@ impl App {
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
-        p!("App resumed")
+        debug!("App resumed")
     }
 
     fn window_event(
@@ -32,7 +32,7 @@ impl ApplicationHandler for App {
             event: winit::event::WindowEvent,
         ) {
         if event == WindowEvent::CloseRequested {
-            println!("Window was closed. Stopping...");
+            warn!("Window was closed. Stopping...");
             event_loop.exit();
         }
     }
@@ -46,18 +46,18 @@ impl ApplicationHandler for App {
         if let DeviceEvent::Key( RawKeyEvent { physical_key, state } ) = event {
             match state {
                 ElementState::Pressed => {
-                    p!("Key {physical_key:?} pressed!");
+                    trace!("Key {physical_key:?} pressed!");
                     self.pressed_keys.insert(physical_key);
                 }
                 ElementState::Released => {
-                    p!("Key {physical_key:?} released!");
+                    trace!("Key {physical_key:?} released!");
                     let _ = self.pressed_keys.remove(&physical_key);
                 }
             }
 
             if let Err(e) = handle_hotkeys(self) {
-                eprintln!("Failed to execute hotkey action: {e}");
-                eprintln!("Pressed keys: {:#?}", self.pressed_keys);
+                error!("Failed to execute hotkey action: {e}");
+                debug!("Pressed keys: {:#?}", self.pressed_keys);
             }
         }
     }
@@ -67,7 +67,7 @@ fn handle_hotkeys(app: &App) -> Result<()> {
     if app.is_key_held(PhysicalKey::Code(KeyCode::SuperLeft)) {
         if app.is_key_held(PhysicalKey::Code(KeyCode::AltLeft)) {
             if app.is_key_held(PhysicalKey::Code(KeyCode::KeyL)) {
-                p!("Loop registered by hotkey handler");
+                debug!("Loop registered by hotkey handler");
                 if mpv::LOOPED.load(Ordering::Relaxed) {
                     mpv::send_command_blocking(r#"{ "command": ["set", "loop-file", "no"] }"#)?;
                 } else {
@@ -75,29 +75,29 @@ fn handle_hotkeys(app: &App) -> Result<()> {
                 }
             }
             else if app.is_key_held(PhysicalKey::Code(KeyCode::KeyM)) {
-                p!("Mute registered by hotkey handler");
+                debug!("Mute registered by hotkey handler");
                 mpv::send_command_blocking(r#"{ "command": ["cycle", "mute"] }"#)?;
             }
         }
 
         else if app.is_key_held(PhysicalKey::Code(KeyCode::KeyK)) {
-            p!("Pause registered by hotkey handler");
+            debug!("Pause registered by hotkey handler");
             mpv::send_command_blocking(r#"{ "command": ["cycle", "pause"] }"#)?;
         }
         else if app.is_key_held(PhysicalKey::Code(KeyCode::KeyL)) {
-            p!("Next registered by hotkey handler");
+            debug!("Next registered by hotkey handler");
             mpv::send_command_blocking(r#"{ "command": ["playlist-next"] }"#)?;
         }
         else if app.is_key_held(PhysicalKey::Code(KeyCode::KeyJ)) {
-            p!("Previous registered by hotkey handler");
+            debug!("Previous registered by hotkey handler");
             mpv::send_command_blocking(r#"{ "command": ["playlist-prev"] }"#)?;
         }
         else if app.is_key_held(PhysicalKey::Code(KeyCode::Comma)) {
-            p!("Seek back registered by hotkey handler");
+            debug!("Seek back registered by hotkey handler");
             mpv::send_command_blocking(r#"{ "command": ["seek", "-5", "relative", "exact"] }"#)?;
         }
         else if app.is_key_held(PhysicalKey::Code(KeyCode::Period)) {
-            p!("Seek forward registered by hotkey handler");
+            debug!("Seek forward registered by hotkey handler");
             mpv::send_command_blocking(r#"{ "command": ["seek", "5", "relative", "exact"] }"#)?;
         }
     }
@@ -110,6 +110,6 @@ pub async fn register_global_hotkey_handler() {
     event_loop.set_control_flow(ControlFlow::Wait);
 
     let mut app = App::default();
-    p!("Registered global hotkey handler");
+    info!("Registered global hotkey handler");
     event_loop.run_app(&mut app).unwrap();
 }

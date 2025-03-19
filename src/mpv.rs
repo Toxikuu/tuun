@@ -17,8 +17,9 @@ use tokio::{
     sync::Mutex,
     time::{sleep, Duration},
 };
+use tracing::{instrument, trace, debug, info, warn, error};
 
-use crate::{integrations::lastfm_scrobble, structs::Track, CONFIG, p};
+use crate::{integrations::lastfm_scrobble, structs::Track, CONFIG};
 
 const  SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
 pub static LOOPED:    AtomicBool = AtomicBool::new(false);
@@ -73,23 +74,28 @@ pub async fn connect() -> Result<()> {
     Ok(())
 }
 
+#[instrument(level = "debug")]
 pub async fn send_command(command: &str) -> Result<Value> {
     let stream = UnixStream::connect(SOCK_PATH).await?;
     let (reader, mut writer) = stream.into_split();
     let mut reader = BufReader::new(reader);
+    debug!("Connected to mpv socket {SOCK_PATH:?}");
     
     writer.write_all(command.as_bytes()).await?;
     writer.write_all(b"\n").await?;
     writer.flush().await?;
+    debug!("Sent mpv command: {command:#}");
 
     let mut response = String::new();
     reader.read_line(&mut response).await?;
 
     let json: Value = serde_json::from_str(&response)?;
+    debug!("Received mpv response: {json:#}");
 
     Ok(json)
 }
 
+#[instrument(level = "debug")]
 pub fn send_command_blocking(command: &str) -> Result<Value> {
     use std::{
         io::{
@@ -105,12 +111,14 @@ pub fn send_command_blocking(command: &str) -> Result<Value> {
     stream.write_all(command.as_bytes())?;
     stream.write_all(b"\n")?;
     stream.flush()?;
+    debug!("Sending blocking mpv command: {command:#}");
     
     let mut reader = BufReader::new(stream);
     let mut response = String::new();
     reader.read_line(&mut response)?;
     
     let json: Value = serde_json::from_str(&response)?;
+    debug!("Received blocking mpv command response: {json:#}");
 
     Ok(json)
 }
@@ -122,24 +130,24 @@ async fn handle_events(json: Value) {
     if let Some(event) = json.get("event").and_then(|v| v.as_str()) {
         match event {
             "start-file" => {
-                p!(" //// NEW SONG STARTED")
+                debug!("MPV Event: New file started")
             },
             "end-file" => {
                 if let Some(reason) = json.get("reason").and_then(|v| v.as_str()) {
                     if reason == "quit" {
-                        println!(" //// MPV QUIT");
+                        info!("MPV quit. Exiting...");
                         exit(0)
                     } else {
-                        p!(" //// EOF WITH REASON: {reason}");
+                        debug!("MPV Event: EOF:\n{reason:#}");
                     }
                 }
             },
             "property-change" => {
+                trace!("Detected property change: {json:#}");
                 handle_properties(json).await;
             }
             _ => {
-                // should only be included in verbose mode
-                p!("Received event: {event:#}")
+                trace!("MPV Event: Received uncategorized event:\n{event:#}");
             }
         }
     }
@@ -147,23 +155,25 @@ async fn handle_events(json: Value) {
 
 /// Handles MPV properties.
 /// Supported properties include filename, pause, loop-file, mute, and playback-time
+#[instrument(level = "trace")]
 async fn handle_properties(json: Value) {
     if let Some(property) = json.get("name").and_then(|v| v.as_str()) {
         match property {
             "filename" => {
-                p!(" //// FILENAME CHANGED");
-                p!(" //// Filename property: {json:#}");
+                info!("MPV Property: Filename changed");
+                debug!("Filename property: {json:#}");
             },
             "pause" => {
-                p!(" //// PAUSE TOGGLED");
-                p!(" //// Pause property: {json:#}");
+                info!("MPV Property: Pause toggled");
+                debug!("Pause property: {json:#}");
                 if let Some(paused) = json.get("data").and_then(|v| v.as_bool()) {
                     PAUSED.store(paused, Ordering::Relaxed);
                 };
+                debug!("PAUSED set to {}", PAUSED.load(Ordering::Relaxed));
             },
             "loop-file" => {
-                p!(" //// LOOP TOGGLED");
-                p!(" //// Loop property: {json:#}");
+                info!("MPV Property: Loop toggled");
+                debug!("Loop property: {json:#}");
                 if let Some(looped) = json.get("data").and_then(|v| v.as_bool()) {
                     LOOPED.store(looped, Ordering::Relaxed);
                 };
@@ -172,23 +182,27 @@ async fn handle_properties(json: Value) {
                     let looped = matches!(looped, "inf");
                     LOOPED.store(looped, Ordering::Relaxed);
                 };
+                debug!("LOOPED set to {}", LOOPED.load(Ordering::Relaxed));
             },
             "mute" => {
-                p!(" //// MUTE TOGGLED");
-                p!(" //// Mute property: {json:#}");
+                info!("MPV Property: Mute toggled");
+                debug!("Mute property: {json:#}");
             },
             "playback-time" => {
+                trace!("MPV Property: Playback time changed");
                 let mut track = TRACK.lock().await;
                 let time = json.get("data").and_then(|v| v.as_f64()).unwrap_or(0.);
+                trace!("Time: {time}");
 
                 track.update_progress(time).await;
 
                 if let Err(e) = queue().await {
-                    eprintln!("Failed to refresh queue: {e}")
+                    error!("Failed to refresh queue: {e:#}");
                 }
 
                 if time == 0. {
                     FRESH.store(true, Ordering::Relaxed);
+                    debug!("Registered track '{track:#?}' as fresh");
                 }
 
                 track.display();
@@ -196,32 +210,37 @@ async fn handle_properties(json: Value) {
                     FRESH.store(false, Ordering::Relaxed);
 
                     if CONFIG.lastfm.used {
+                        // TODO: Implement display for track so the logs look nicer
+                        info!("Scrobbling track: {track:#?}");
                         let track_copy = track.clone();
                         tokio::spawn(async move {
                             if let Err(e) = tokio::task::block_in_place(|| {
                                 lastfm_scrobble(track_copy)
                             }) {
-                                eprintln!("Failed to scrobble track: {e:#?}")
+                                error!("Failed to scrobble track: {e:#?}")
                             }
                         });
                     }
                 }
             },
             "metadata" => {
-                p!(" //// METADATA CHANGED");
-                p!(" //// Metadata property: {json:#}");
+                info!("MPV Property: Metadata changed");
+                debug!("Metadata property: {json:#}");
+
                 let mut track = TRACK.lock().await;
                 track.update_metadata(&json).await;
                 track.rpc().await;
             },
             _ => {
-                p!("Received property: {json:#}")
+                debug!("MPV Property: Received unrecognized property:\n{json:#}")
             }
         }
     }
 }
 
+#[instrument]
 pub async fn launch() {
+    info!("Launching mpv...");
     Command::new("mpv")
         .arg(
             if CONFIG.general.shuffle {
@@ -240,8 +259,9 @@ pub async fn launch() {
 
     for a in 1..=32 {
         sleep(Duration::from_millis(128)).await;
-        p!("Polling mpv socket {a}/32...");
+        debug!("Polling MPV socket {a}/32...");
         if fs::metadata(SOCK_PATH).is_ok() {
+            debug!("MPV socket was ok on attempt {a}");
             break
         }
     }
@@ -250,14 +270,15 @@ pub async fn launch() {
         Ok(queued) => {
             if queued {
                 if let Err(e) = send_command(r#"{ "command": ["playlist-next"] }"#).await {
-                    eprintln!("Failed to skip track for queue start: {e}")
+                    error!("Failed to skip track for queue start: {e}")
                 }
             }
         },
-        Err(e) => eprintln!("Failed to queue tracks from start: {e}")
+        Err(e) => error!("Failed to queue tracks from start: {e}")
     }
 }
 
+#[instrument]
 fn prequeue() -> Vec<String> {
     let playlist = &CONFIG.general.playlist;
     if QUEUE.exists() {
@@ -267,9 +288,13 @@ fn prequeue() -> Vec<String> {
     }
 }
 
+#[instrument]
 async fn queue() -> Result<bool> {
     let queue = &*QUEUE;
+
+    trace!("Checking whether queue {queue:?} exists...");
     if !queue.exists() {
+        trace!("No songs queued");
         return Ok(false)
     }
 
@@ -279,9 +304,10 @@ async fn queue() -> Result<bool> {
         let song = song.trim();
         let command = format!(r#"{{ "command": ["loadfile", "{song}", "insert-next"] }}"#);
         send_command(&command).await?;
-        p!("Queued {song}");
+        info!("Queued {song}");
     }
 
     fs::remove_file(queue)?;
+    debug!("Removed queue file {queue:?}");
     Ok(true)
 }
