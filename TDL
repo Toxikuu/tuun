@@ -19,8 +19,6 @@ TODO
 
     Add a field Vol that tracks mpv volume
 
-    Add a debug feature but otherwise disable verbose output
-
 WIP
 
 DONEISH
@@ -37,6 +35,9 @@ DONEISH
 
 DROPPED
 
+    Add a debug feature but otherwise disable verbose output
+        Used tracing instead
+
     Add a field Img containing the link to the album cover
         I don't like how it looks but I might add it back later
 
@@ -50,6 +51,6 @@ IDEAS
 ROADMAP
 
     Features for first proper release
-        [-] solid install script
+        [*] makefiles
         [-] basic documentation
-        [-] more testing
+        [*] testing
