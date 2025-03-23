@@ -31,7 +31,7 @@ pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(N
 #[tokio::main]
 async fn main() -> Result<()> {
     // set up logging
-    let file_appender = rolling::daily("/tmp/tuun", "tuun.log");
+    let file_appender = rolling::never("/tmp/tuun", "log");
     let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
 
     let log_level = env::var("TUUN_LOG_LEVEL").unwrap_or("info".to_string());
