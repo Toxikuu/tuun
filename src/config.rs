@@ -31,63 +31,54 @@ pub struct LastFMConfig {
     pub password: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct DiscordConfig {
-    #[serde(default)]
+    #[serde(default = "default_discord_used")]
     pub used: bool,
 
-    #[serde(default)]
+    #[serde(default = "default_discord_client_id")]
     pub client_id: String,
 }
 
-impl Default for DiscordConfig {
-    fn default() -> Self {
-        Self {
-            used: true,
-            client_id: "1272345557276295310".to_owned()
-        }
-    }
+const fn default_discord_used() -> bool { true }
+
+fn default_discord_client_id() -> String {
+    "1272345557276295310".to_owned()
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct GeneralConfig {
-    #[serde(default)]
+    #[serde(default = "default_shuffle")]
     pub shuffle: bool,
 
-    #[serde(default)]
+    #[serde(default = "default_playlist")]
     pub playlist: String,
 
-    #[serde(default)]
+    #[serde(default = "default_music_dir")]
     pub music_dir: String,
 }
 
-impl Default for GeneralConfig {
-    fn default() -> Self {
-        Self {
-            shuffle: true,
-            playlist: "/tmp/tuun/all.tpl".to_owned(),
-            // TODO: Initialize $HOME once somewhere and just reuse it
-            music_dir: format!("{}/Music", env::var("HOME").expect("Couldn't find home directory ($HOME is not set)")),
-        }
-    }
+const fn default_shuffle() -> bool { true }
+
+fn default_playlist() -> String {
+    "/tmp/tuun/all.tpl".to_owned()
 }
 
-#[derive(Deserialize, Debug)]
+fn default_music_dir() -> String {
+    format!("{}/Music", env::var("HOME").expect("Couldn't find home directory ($HOME is not set)"))
+}
+
+#[derive(Deserialize, Debug, Default)]
 pub struct TuunFMConfig {
     #[serde(default)]
     pub used: bool,
 
-    #[serde(default)]
+    #[serde(default = "default_tuunfm_link")]
     pub link: String,
 }
 
-impl Default for TuunFMConfig {
-    fn default() -> Self {
-        Self {
-            used: false,
-            link: "http://127.0.0.1:8080".to_owned(),
-        }
-    }
+fn default_tuunfm_link() -> String {
+    "http://127.0.0.1:8080".to_owned()
 }
 
 impl Config {
