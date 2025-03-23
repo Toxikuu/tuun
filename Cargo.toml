@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "2.1.1" # tweaked logs, added now playing log
+version = "2.1.2" # tweaked log file destination, improved default value logic (hopefully)
 edition = "2024"
 
 [dependencies]
