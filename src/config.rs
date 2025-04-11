@@ -2,10 +2,22 @@
 //
 // responsible for handling config.toml
 
+use std::{
+    env,
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
+};
+
 use serde::Deserialize;
-use std::{env, fs};
-use std::path::{Path, PathBuf};
-use tracing::{debug, info, warn, error};
+use tracing::{
+    debug,
+    error,
+    info,
+    warn,
+};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -24,10 +36,10 @@ pub struct Config {
 
 #[derive(Deserialize, Debug, Default)]
 pub struct LastFMConfig {
-    pub used: bool,
-    pub apikey: String,
-    pub secret: String,
-    pub user: String,
+    pub used:     bool,
+    pub apikey:   String,
+    pub secret:   String,
+    pub user:     String,
     pub password: String,
 }
 
@@ -42,9 +54,7 @@ pub struct DiscordConfig {
 
 const fn default_discord_used() -> bool { true }
 
-fn default_discord_client_id() -> String {
-    "1272345557276295310".to_owned()
-}
+fn default_discord_client_id() -> String { "1272345557276295310".to_owned() }
 
 #[derive(Deserialize, Debug, Default)]
 pub struct GeneralConfig {
@@ -60,12 +70,13 @@ pub struct GeneralConfig {
 
 const fn default_shuffle() -> bool { true }
 
-fn default_playlist() -> String {
-    "/tmp/tuun/all.tpl".to_owned()
-}
+fn default_playlist() -> String { "/tmp/tuun/all.tpl".to_owned() }
 
 fn default_music_dir() -> String {
-    format!("{}/Music", env::var("HOME").expect("Couldn't find home directory ($HOME is not set)"))
+    format!(
+        "{}/Music",
+        env::var("HOME").expect("Couldn't find home directory ($HOME is not set)")
+    )
 }
 
 #[derive(Deserialize, Debug, Default)]
@@ -77,13 +88,13 @@ pub struct TuunFMConfig {
     pub link: String,
 }
 
-fn default_tuunfm_link() -> String {
-    "http://127.0.0.1:8080".to_owned()
-}
+fn default_tuunfm_link() -> String { "http://127.0.0.1:8080".to_owned() }
 
 impl Config {
     pub fn load() -> Self {
-        let home_dir = PathBuf::from(env::var("HOME").expect("Couldn't find home directory ($HOME is not set)"));
+        let home_dir = PathBuf::from(
+            env::var("HOME").expect("Couldn't find home directory ($HOME is not set)"),
+        );
         let home_dir_str = home_dir.to_string_lossy();
         debug!("Detected home directory: {home_dir:?}");
 
@@ -102,20 +113,18 @@ impl Config {
         };
 
         let mut config: Self = match toml::de::from_str(&config_str) {
-            Ok(c) => c,
-            Err(e) => {
+            | Ok(c) => c,
+            | Err(e) => {
                 error!("Invalid syntax detected in config");
                 panic!("{e}");
-            }
+            },
         };
 
-        // allow ~ in paths in config.toml
+        // allow ~ and $HOME in paths in config.toml
         config.general.music_dir = config.general.music_dir.replacen('~', &home_dir_str, 1);
-        config.general.playlist  = config.general.playlist .replacen('~', &home_dir_str, 1);
-
-        // allow $HOME in paths in config.toml
+        config.general.playlist = config.general.playlist.replacen('~', &home_dir_str, 1);
         config.general.music_dir = config.general.music_dir.replacen("$HOME", &home_dir_str, 1);
-        config.general.playlist  = config.general.playlist .replacen("$HOME", &home_dir_str, 1);
+        config.general.playlist = config.general.playlist.replacen("$HOME", &home_dir_str, 1);
 
         info!("Loaded config");
         debug!("Config: {config:#?}");
@@ -132,7 +141,9 @@ impl Config {
         }
 
         if let Err(e) = fs::copy(&default_config_path, config_path) {
-            error!("Failed to copy default config from {default_config_path:?} to {config_path:?}: {e}");
+            error!(
+                "Failed to copy default config from {default_config_path:?} to {config_path:?}: {e}"
+            );
             warn!("Did you run make install?")
         }
     }

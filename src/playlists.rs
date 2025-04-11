@@ -1,8 +1,17 @@
 // src/playlists.rs
 //! Some logic for handling playlists
 
-use std::{fs, path::PathBuf};
-use tracing::{instrument, trace, debug, warn};
+use std::{
+    fs,
+    path::PathBuf,
+};
+
+use tracing::{
+    debug,
+    instrument,
+    trace,
+    warn,
+};
 
 use crate::CONFIG;
 
@@ -21,9 +30,11 @@ impl Playlist {
 
     #[instrument(level = "trace")]
     pub fn write(&self, songs: &[PathBuf]) {
-        let contents = songs.iter().map(|song| {
-            song.to_string_lossy()
-        }).collect::<Vec<_>>().join("\n");
+        let contents = songs
+            .iter()
+            .map(|song| song.to_string_lossy())
+            .collect::<Vec<_>>()
+            .join("\n");
 
         fs::write(&self.playlist_path, &contents).expect("Failed to write playlist");
         debug!("Wrote playlist: {self:#?}");
@@ -34,10 +45,10 @@ impl Playlist {
 #[instrument]
 pub fn create_all_playlist() {
     let path = PathBuf::from("/tmp/tuun/all.tpl");
-    
-    // recreate all.tpl on restarts since it resides in /tmp
+
+    // only recreate all.tpl on restarts since it resides in /tmp
     if path.exists() {
-        return
+        return;
     }
 
     debug!("Creating the all playlist...");

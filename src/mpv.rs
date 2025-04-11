@@ -1,32 +1,55 @@
-use anyhow::Result;
-use once_cell::sync::Lazy;
-use serde_json::Value;
 use std::{
     fs,
     path::PathBuf,
     process::exit,
     sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, LazyLock,
-    }
+        Arc,
+        LazyLock,
+        atomic::{
+            AtomicBool,
+            Ordering,
+        },
+    },
 };
+
+use anyhow::Result;
+use once_cell::sync::Lazy;
+use serde_json::Value;
 use tokio::{
-    io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, 
-    net::UnixStream, 
-    process::Command, 
+    io::{
+        AsyncBufReadExt,
+        AsyncWriteExt,
+        BufReader,
+    },
+    net::UnixStream,
+    process::Command,
     sync::Mutex,
-    time::{sleep, Duration},
+    time::{
+        Duration,
+        sleep,
+    },
 };
-use tracing::{instrument, trace, debug, info, warn, error};
+use tracing::{
+    debug,
+    error,
+    info,
+    instrument,
+    trace,
+    warn,
+};
 
-use crate::{integrations::lastfm_scrobble, structs::Track, CONFIG};
+use crate::{
+    CONFIG,
+    integrations::lastfm_scrobble,
+    structs::Track,
+};
 
-const  SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
-pub static LOOPED:    AtomicBool = AtomicBool::new(false);
-pub static PAUSED:    AtomicBool = AtomicBool::new(false);
-static FRESH:         AtomicBool = AtomicBool::new(false);
-static TRACK:         Lazy<Arc<Mutex<Track>>> = Lazy::new(|| Arc::new(Mutex::new(Track::default())));
-static QUEUE:         LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("/tmp/tuun/quu.tpl"));
+const SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
+pub static LOOPED: AtomicBool = AtomicBool::new(false);
+pub static PAUSED: AtomicBool = AtomicBool::new(false);
+static FRESH: AtomicBool = AtomicBool::new(false);
+static TRACK: Lazy<Arc<Mutex<Track>>> = Lazy::new(|| Arc::new(Mutex::new(Track::default())));
+static QUEUE: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("/tmp/tuun/quu.tpl"));
 
 pub async fn connect() -> Result<()> {
     // Connect to mpv's socket
@@ -62,15 +85,15 @@ pub async fn connect() -> Result<()> {
         }
 
         match serde_json::from_str::<Value>(&line) {
-            Ok(json) => {
+            | Ok(json) => {
                 handle_events(json).await;
-        },
-            Err(e) => {
+            },
+            | Err(e) => {
                 eprintln!("Failed to parse JSON: {e}");
-            }
+            },
         }
     }
-    
+
     Ok(())
 }
 
@@ -80,7 +103,7 @@ pub async fn send_command(command: &str) -> Result<Value> {
     let (reader, mut writer) = stream.into_split();
     let mut reader = BufReader::new(reader);
     debug!("Connected to mpv socket {SOCK_PATH:?}");
-    
+
     writer.write_all(command.as_bytes()).await?;
     writer.write_all(b"\n").await?;
     writer.flush().await?;
@@ -99,8 +122,8 @@ pub async fn send_command(command: &str) -> Result<Value> {
 pub fn send_command_blocking(command: &str) -> Result<Value> {
     use std::{
         io::{
-            BufReader,
             BufRead,
+            BufReader,
             Write,
         },
         os::unix::net::UnixStream,
@@ -112,11 +135,11 @@ pub fn send_command_blocking(command: &str) -> Result<Value> {
     stream.write_all(b"\n")?;
     stream.flush()?;
     debug!("Sending blocking mpv command: {command:#}");
-    
+
     let mut reader = BufReader::new(stream);
     let mut response = String::new();
     reader.read_line(&mut response)?;
-    
+
     let json: Value = serde_json::from_str(&response)?;
     debug!("Received blocking mpv command response: {json:#}");
 
@@ -129,10 +152,10 @@ pub fn send_command_blocking(command: &str) -> Result<Value> {
 async fn handle_events(json: Value) {
     if let Some(event) = json.get("event").and_then(|v| v.as_str()) {
         match event {
-            "start-file" => {
+            | "start-file" => {
                 debug!("MPV Event: New file started")
             },
-            "end-file" => {
+            | "end-file" => {
                 if let Some(reason) = json.get("reason").and_then(|v| v.as_str()) {
                     if reason == "quit" {
                         info!("MPV quit. Exiting...");
@@ -142,16 +165,16 @@ async fn handle_events(json: Value) {
                     }
                 }
             },
-            "property-change" => {
+            | "property-change" => {
                 trace!("Detected property change: {json:#}");
                 handle_properties(json).await;
-            }
-            _ => {
+            },
+            | _ => {
                 trace!("MPV Event: Received uncategorized event:\n{event:#}");
-            }
+            },
         }
     }
-} 
+}
 
 /// Handles MPV properties.
 /// Supported properties include filename, pause, loop-file, mute, and playback-time
@@ -159,11 +182,11 @@ async fn handle_events(json: Value) {
 async fn handle_properties(json: Value) {
     if let Some(property) = json.get("name").and_then(|v| v.as_str()) {
         match property {
-            "filename" => {
+            | "filename" => {
                 debug!("MPV Property: Filename changed");
                 debug!("Filename property: {json:#}");
             },
-            "pause" => {
+            | "pause" => {
                 info!("MPV Property: Pause toggled");
                 debug!("Pause property: {json:#}");
                 if let Some(paused) = json.get("data").and_then(|v| v.as_bool()) {
@@ -171,7 +194,7 @@ async fn handle_properties(json: Value) {
                 };
                 debug!("PAUSED set to {}", PAUSED.load(Ordering::Relaxed));
             },
-            "loop-file" => {
+            | "loop-file" => {
                 info!("MPV Property: Loop toggled");
                 debug!("Loop property: {json:#}");
                 if let Some(looped) = json.get("data").and_then(|v| v.as_bool()) {
@@ -184,11 +207,11 @@ async fn handle_properties(json: Value) {
                 };
                 debug!("LOOPED set to {}", LOOPED.load(Ordering::Relaxed));
             },
-            "mute" => {
+            | "mute" => {
                 info!("MPV Property: Mute toggled");
                 debug!("Mute property: {json:#}");
             },
-            "playback-time" => {
+            | "playback-time" => {
                 trace!("MPV Property: Playback time changed");
                 let mut track = TRACK.lock().await;
                 let time = json.get("data").and_then(|v| v.as_f64()).unwrap_or(0.);
@@ -214,27 +237,29 @@ async fn handle_properties(json: Value) {
                         info!("Scrobbling track: {track:#?}");
                         let track_copy = track.clone();
                         tokio::spawn(async move {
-                            if let Err(e) = tokio::task::block_in_place(|| {
-                                lastfm_scrobble(track_copy)
-                            }) {
-                                error!("Failed to scrobble track: {e:#?}")
+                            if let Err(e) = lastfm_scrobble(track_copy).await {
+                                error!("Failed to scrobble track: {e:#?}");
                             }
                         });
                     }
                 }
             },
-            "metadata" => {
+            | "metadata" => {
                 debug!("MPV Property: Metadata changed");
                 debug!("Metadata property: {json:#}");
 
                 let mut track = TRACK.lock().await;
-                track.update_metadata(&json).await;
+                if let Err(e) = track.update_metadata(&json).await {
+                    error!("Failed to update metadata: {e:#?}")
+                }
                 info!("Now playing '{track}'");
-                track.rpc().await;
+                if CONFIG.discord.used {
+                    track.rpc().await;
+                }
             },
-            _ => {
-                debug!("MPV Property: Received unrecognized property:\n{json:#}")
-            }
+            | _ => {
+                warn!("MPV Property: Received unrecognized property:\n{json:#}")
+            },
         }
     }
 }
@@ -243,13 +268,7 @@ async fn handle_properties(json: Value) {
 pub async fn launch() {
     info!("Launching mpv...");
     Command::new("mpv")
-        .arg(
-            if CONFIG.general.shuffle {
-                "--shuffle=yes"
-            } else {
-                "--shuffle=no"
-            }
-        )
+        .arg(if CONFIG.general.shuffle { "--shuffle=yes" } else { "--shuffle=no" })
         .arg("--really-quiet")
         .arg("--geometry=350x350+1400+80")
         .arg("--title='tuun-mpv'")
@@ -263,19 +282,20 @@ pub async fn launch() {
         debug!("Polling MPV socket {a}/32...");
         if fs::metadata(SOCK_PATH).is_ok() {
             debug!("MPV socket was ok on attempt {a}");
-            break
+            break;
         }
     }
 
     match queue().await {
-        Ok(queued) => {
+        | Ok(queued) => {
             if queued {
+                info!("Starting with queued tracks");
                 if let Err(e) = send_command(r#"{ "command": ["playlist-next"] }"#).await {
                     error!("Failed to skip track for queue start: {e}")
                 }
             }
         },
-        Err(e) => error!("Failed to queue tracks from start: {e}")
+        | Err(e) => error!("Failed to queue tracks from start: {e}"),
     }
 }
 
@@ -283,7 +303,10 @@ pub async fn launch() {
 fn prequeue() -> Vec<String> {
     let playlist = &CONFIG.general.playlist;
     if QUEUE.exists() {
-        vec![format!("--playlist={}", QUEUE.display()), format!("--playlist={playlist}")]
+        vec![
+            format!("--playlist={}", QUEUE.display()),
+            format!("--playlist={playlist}"),
+        ]
     } else {
         vec![format!("--playlist={playlist}")]
     }
@@ -296,7 +319,7 @@ async fn queue() -> Result<bool> {
     trace!("Checking whether queue {queue:?} exists...");
     if !queue.exists() {
         trace!("No songs queued");
-        return Ok(false)
+        return Ok(false);
     }
 
     let songs = fs::read_to_string(queue)?;

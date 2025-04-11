@@ -1,7 +1,7 @@
 // src/traits.rs
 //! Defines traits for use elsewhere
 
-pub trait Permit<T, E> 
+pub trait Permit<T, E>
 where
     T: Default,
 {
@@ -18,8 +18,8 @@ impl<E> Permit<(), E> for Result<(), E> {
     /// **Example:**
     /// ```rust
     /// // Attempt to create a directory, but permit the case where it already exists
-    /// if let Err(e) = std::fs::create_dir("/tmp/dir")
-    ///     .permit(|e| e.kind() == std::io::ErrorKind::AlreadyExists)
+    /// if let Err(e) =
+    ///     std::fs::create_dir("/tmp/dir").permit(|e| e.kind() == std::io::ErrorKind::AlreadyExists)
     /// {
     ///     // If a different error exists, handle it as usual
     ///     eprintln!("Failed to create /tmp/dir: {e}")
@@ -32,10 +32,9 @@ impl<E> Permit<(), E> for Result<(), E> {
         F: FnOnce(&E) -> bool,
     {
         match self {
-            Ok(())             => Ok(()),  // if result is ok, return Ok(())
-            Err(ref e) if f(e) => Ok(()),  // permit the error and return Ok(())
-            Err(e)             => Err(e),  // return the original error if not permitted
+            | Ok(()) => Ok(()),             // if result is ok, return Ok(())
+            | Err(ref e) if f(e) => Ok(()), // permit the error and return Ok(())
+            | Err(e) => Err(e),             // return the original error if not permitted
         }
     }
 }
-
