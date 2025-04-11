@@ -1,24 +1,60 @@
-use anyhow::{bail, Result};
-use discord_rich_presence::{activity, DiscordIpc};
-use crate::{CONFIG, RPC_CLIENT, SCROBBLER};
-use crate::structs::{Track, LastFM};
-use rustfm_scrobble::{Scrobble, Scrobbler};
-use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{instrument, debug, info, warn, error};
+use std::{
+    path::Path,
+    time::{
+        Duration,
+        SystemTime,
+        UNIX_EPOCH,
+    },
+};
+
+use anyhow::{
+    Result,
+    bail,
+};
+use discord_rich_presence::{
+    DiscordIpc,
+    activity::{
+        self,
+        Activity,
+    },
+    error::Error as DrpErr,
+};
+use rustfm_scrobble::{
+    Scrobble,
+    Scrobbler,
+};
+use tokio::time::timeout;
+use tracing::{
+    debug,
+    error,
+    info,
+    instrument,
+    warn,
+};
+
+use crate::{
+    CONFIG,
+    RPC_CLIENT,
+    SCROBBLER,
+    structs::{
+        LastFM,
+        Track,
+    },
+    traits::Permit,
+};
 
 #[instrument]
 pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
-    let mut scrobbler_lock = crate::SCROBBLER.lock().unwrap();
+    let mut scrobbler_lock = crate::SCROBBLER.lock().await;
 
     if scrobbler_lock.is_none() {
         info!("Authenticating lastfm scrobbler...");
         let lfm = LastFM::new();
 
-        if lfm.apikey.is_empty() 
-        || lfm.secret.is_empty()
-        || lfm.username.is_empty()
-        || lfm.password.is_empty()
+        if lfm.apikey.is_empty()
+            || lfm.secret.is_empty()
+            || lfm.username.is_empty()
+            || lfm.password.is_empty()
         {
             warn!("Cowardly refusing to authenticate without credentials");
             bail!("Cowardly refusing to authenticate without credentials");
@@ -37,9 +73,9 @@ pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
 }
 
 #[instrument(skip(track))]
-pub fn lastfm_scrobble(track: Track) -> Result<()> {
-    let scrobbler_lock = SCROBBLER.lock().unwrap();
-    
+pub async fn lastfm_scrobble(track: Track) -> Result<()> {
+    let scrobbler_lock = SCROBBLER.lock().await;
+
     let Some(scrobbler) = &*scrobbler_lock else {
         error!("Scrobbler is not initialized");
         bail!("Scrobbler is not initialized");
