@@ -2,20 +2,13 @@
 
 TODO
 
-    LRCLIB integration
-        Only do this for mp3s
-        I'm thinking check if lyrics exist as a metadata field (USLT and SLST with id3)
-        If they don't exist, request the lyrics and save them to the relevant field(s)
-        Have another terminal window open up and display the lyrics (centered)
+    Fix crash with [general] commented out in the config
 
     Vendor rustfm_scrobble
         Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
-        Easier than vendoring it myself
 
     Add a utility, call it tm, for adding arbitrary metadata
         (ideally open all the fields in $EDITOR and allow editing)
-
-    Allow field configuration in config.toml
 
     Add a field Vol that tracks mpv volume
 
@@ -33,6 +26,13 @@ DONEISH
 
     Config.toml
 
+    Support queueing playlists and launching with a specific one
+        A bit fucky though
+
+    Use configure and makefiles
+        Configure could be used to abstract rust features
+        And it would ease installation
+
 DROPPED
 
     Add a debug feature but otherwise disable verbose output
@@ -43,10 +43,13 @@ DROPPED
 
 IDEAS
 
-    Support queueing playlists and launching with a specific one
+    LRCLIB integration
+        Only do this for mp3s
+        I'm thinking check if lyrics exist as a metadata field (USLT and SLST with id3)
+        If they don't exist, request the lyrics and save them to the relevant field(s)
+        Have another terminal window open up and display the lyrics (centered)
 
-    Use configure and makefiles
-        Configure would be used to abstract rust features and set stuff like songdir
+    Allow field configuration in config.toml
 
 ROADMAP
 
