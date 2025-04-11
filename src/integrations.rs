@@ -95,52 +95,106 @@ pub async fn lastfm_scrobble(track: Track) -> Result<()> {
 pub async fn discord_rpc(track: Track) -> Result<()> {
     if !CONFIG.discord.used {
         debug!("Skipping discord RPC as Discord is unused in the config");
-        return Ok(())
+        return Ok(());
     }
 
     let socketpath = Path::new("/run/user/1000/discord-ipc-0");
     if !socketpath.exists() {
         warn!("Discord IPC {socketpath:?} does not exist");
-        return Ok(())
+        return Ok(());
     } // don't complain when discord is closed
-    if track.is_default()   {
+
+    if track.is_default() {
         debug!("Cowardly refusing to set rich presence to a default track");
-        return Ok(())
+        return Ok(());
     } // don't try to set empty tracks
-    
-    // blocking is used here because it's fast
-    // TODO: migrate this to async
-    tokio::task::spawn_blocking(move || {
-        let mut client = RPC_CLIENT.lock().unwrap();
+
+    tokio::spawn(async move {
+        let mut client = RPC_CLIENT.lock().await;
 
         if let Err(e) = client.clear_activity() {
-            error!("Failed to clear rich presence activity: {e:#}");
+            error!("Failed to clear rich presence activity: {}", e.to_string());
+
+            warn!("Reconnecting Discord RPC client...");
+            connect_discord_rpc_client().await;
         }
 
-        let assets = activity::Assets::new()
-            .large_image(&track.arturl)
-            .large_text(&track.album)
-            .small_image("pfp")
-            .small_text("hello from tuun!");
-
-        debug!("Created rich presence activity assets");
-
-        let now = SystemTime::now();
-        let duration = now.duration_since(UNIX_EPOCH)?;
-
-        let timestamp = activity::Timestamps::new().start(duration.as_secs().try_into().unwrap());
-        let payload = activity::Activity::new()
-            .state(&track.artist)
-            .details(&track.title)
-            .assets(assets)
-            .activity_type(activity::ActivityType::Listening)
-            .timestamps(timestamp);
-
+        let payload = create_rpc_payload(&track);
         debug!("Setting Discord RPC for {track:#?}");
 
         if let Err(e) = client.set_activity(payload) {
-            error!("Failed set activity: {e:#}");
+            let error_str = e.to_string();
+            error!("Failed to set activity: {error_str}");
+
+            drop(client);
+            connect_discord_rpc_client().await;
+            client = RPC_CLIENT.lock().await;
+
+            let payload = create_rpc_payload(&track);
+            if let Err(e) = client.set_activity(payload) {
+                error!("Failed to set activity after reconnect: {e:#}");
+            }
         }
+
         Ok(())
-    }).await?
+    })
+    .await?
+}
+
+#[instrument]
+fn create_rpc_payload(track: &Track) -> Activity {
+    let assets = activity::Assets::new()
+        .large_image(&track.arturl)
+        .large_text(&track.album)
+        .small_image("pfp")
+        .small_text("hii");
+    debug!("Created rich presence activity assets");
+
+    let now = SystemTime::now();
+    let duration = now
+        .duration_since(UNIX_EPOCH)
+        .expect("Grandfather paradox or something idk");
+
+    let timestamp = activity::Timestamps::new().start(duration.as_secs() as i64);
+    let payload = activity::Activity::new()
+        .state(&track.artist)
+        .details(&track.title)
+        .assets(assets)
+        .activity_type(activity::ActivityType::Listening)
+        .timestamps(timestamp);
+    debug!("Created rich presence activity payload");
+
+    payload
+}
+
+#[instrument]
+pub async fn connect_discord_rpc_client() {
+    debug!("Attempting to connect Discord RPC client");
+
+    let lock = timeout(Duration::from_secs(4), RPC_CLIENT.lock()).await;
+
+    let Ok(mut client) = lock else {
+        error!("Timed out while trying to acquire lock");
+        return
+    };
+
+    // attempt reconnection is recv fails
+    if client.recv().is_err() {
+        debug!("Failed to receive. Attempting to reconnect client.");
+        if let Err(e) = client.close().permit(|e| matches!(e, DrpErr::NotConnected)) {
+            error!("Failed to close IPC client: {e}");
+            return
+        };
+        if let Err(e) = client.connect() {
+            error!("Failed to reconnect IPC client: {e}");
+            return
+        };
+    }
+
+    if let Err(e) = client.connect() {
+        error!("Failed to connect to Discord RPC client: {e}");
+        return
+    }
+
+    debug!("Connected Discord RPC client");
 }
