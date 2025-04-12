@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "3.0.0" # overhauled rich presence, refactored, formatted
+version = "3.1.0" # refactoring, recent playlist support, misc improvements
 edition = "2024"
 authors = [ "Toxikuu" ]
 description = "A simple music player using MPV as a backend"
