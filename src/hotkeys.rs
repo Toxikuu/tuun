@@ -118,10 +118,20 @@ fn handle_hotkeys(app: &App) -> Result<()> {
 }
 
 pub async fn register_global_hotkey_handler() {
-    let event_loop = EventLoop::new().unwrap();
+    let Ok(event_loop) = EventLoop::new().map_err(|e| {
+        warn!("Failed to create event loop: {e}");
+        warn!("Global hotkeys will not work");
+    }) else {
+        return
+    };
+
     event_loop.set_control_flow(ControlFlow::Wait);
 
     let mut app = App::default();
     info!("Registered global hotkey handler");
-    event_loop.run_app(&mut app).unwrap();
+
+    if let Err(e) = event_loop.run_app(&mut app) {
+        warn!("Failed to run event loop: {e}");
+        warn!("Global hotkeys will not work");
+    }
 }
