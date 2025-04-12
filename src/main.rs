@@ -4,9 +4,11 @@ use std::{
     env,
     fs,
     io::ErrorKind as IOE,
+    path::PathBuf,
     process::{
         Command,
         Stdio,
+        exit,
     },
     sync::LazyLock,
 };
@@ -63,26 +65,39 @@ async fn main() -> Result<()> {
         .with_line_number(true)
         .compact()
         .init();
+
     info!("Starting tuun");
 
-    // create lock
+    // create /tmp/tuun
     if let Err(e) = fs::create_dir("/tmp/tuun").permit(|e| e.kind() == IOE::AlreadyExists) {
-        error!("Failed to create /tmp/tuun: {e}")
+        error!("Failed to create /tmp/tuun: {e}");
+        exit(1)
     }
 
+    // create lock
     if let Err(e) = fs::write("/tmp/tuun/tuun.lock", b"") {
-        error!("Failed to write to tuun.lock: {e}")
+        error!("Failed to write to tuun.lock: {e}");
+        exit(1)
     }
+
     info!("Created lock");
 
-    playlists::create_all_playlist();
-    info!("Created the all playlist");
+    let music_dir = &CONFIG.general.music_dir;
+    if !PathBuf::from(music_dir).exists() {
+        error!("Music directory '{music_dir}' does not exist!");
+        exit(1)
+    }
 
+    // create auto-generated playlists
+    playlists::create_all_playlist();
+    playlists::create_recent_playlist();
+
+    // connect to discord if it's used
     if CONFIG.discord.used {
         connect_discord_rpc_client().await;
     }
 
-    // authenticate scrobbler in the background
+    // authenticate lastfm scrobbler in the background if it's used
     if CONFIG.lastfm.used {
         tokio::spawn(async {
             if let Err(e) = integrations::authenticate_lastfm_scrobbler().await {
@@ -93,11 +108,13 @@ async fn main() -> Result<()> {
         });
     }
 
-    if should_start_tuunfm() {
+    // launch tuunfm if it's used
+    if CONFIG.tuunfm.used {
         start_process("tuunfm").await;
         info!("Started tuunfm");
     }
 
+    // launch mpv
     tokio::spawn(async {
         info!("Launching MPV");
         mpv::launch().await;
@@ -106,12 +123,15 @@ async fn main() -> Result<()> {
         }
     });
 
+    // register hotkey handler
     register_global_hotkey_handler().await;
     info!("Registered global hotkey handler");
 
     Ok(())
 }
 
+/// Utility function to check if a process is running
+/// Returns false on failures
 fn is_process_running(process: &str) -> bool {
     let running = Command::new("pgrep")
         .args(["-x", process])
@@ -123,6 +143,8 @@ fn is_process_running(process: &str) -> bool {
     running
 }
 
+/// Utility function to start a process
+/// Won't start the process if it's already running
 async fn start_process(process: &str) {
     if !is_process_running(process) {
         if let Err(e) = Command::new(process).spawn() {
@@ -133,21 +155,4 @@ async fn start_process(process: &str) {
     } else {
         warn!("{process} is already running")
     }
-}
-
-fn should_start_tuunfm() -> bool {
-    let home = env::var("HOME").expect("HOME environment variable not set");
-    let config_path = format!("{home}/.config/tuun/config.toml");
-    info!("Reading config from {config_path}");
-    let config_content =
-        fs::read_to_string(&config_path).expect("Missing config at ~/.config/tuun/config.toml");
-
-    let parsed = config_content
-        .parse::<toml::Value>()
-        .expect("Invalid config");
-
-    if let Some(tfm) = parsed.get("tuunfm") {
-        return tfm.get("used").and_then(|v| v.as_bool()).unwrap_or(false);
-    }
-    false
 }
