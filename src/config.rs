@@ -1,6 +1,11 @@
 // config.rs
 //
 // responsible for handling config.toml
+//
+// NOTE: My dumb ass spent entirely too long failing to figure out how to just use impl Default for
+// structs with missing fields. The solution is to just use #[serde(default)] at the struct level.
+// https://users.rust-lang.org/t/serde-default-versus-impl-default/66773
+// https://serde.rs/container-attrs.html#default
 
 use std::{
     env,
@@ -19,22 +24,29 @@ use tracing::{
     warn,
 };
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
+#[serde(default)]
 pub struct Config {
-    #[serde(default)]
-    pub lastfm: LastFMConfig,
-
-    #[serde(default)]
+    pub lastfm:  LastFMConfig,
     pub discord: DiscordConfig,
-
-    #[serde(default)]
     pub general: GeneralConfig,
-
-    #[serde(default)]
-    pub tuunfm: TuunFMConfig,
+    pub tuunfm:  TuunFMConfig,
 }
 
-#[derive(Deserialize, Debug, Default)]
+impl Default for LastFMConfig {
+    fn default() -> Self {
+        Self {
+            used:     false,
+            apikey:   String::with_capacity(0),
+            secret:   String::with_capacity(0),
+            user:     String::with_capacity(0),
+            password: String::with_capacity(0),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(default)]
 pub struct LastFMConfig {
     pub used:     bool,
     pub apikey:   String,
@@ -43,52 +55,57 @@ pub struct LastFMConfig {
     pub password: String,
 }
 
-#[derive(Deserialize, Debug, Default)]
-pub struct DiscordConfig {
-    #[serde(default = "default_discord_used")]
-    pub used: bool,
+impl Default for DiscordConfig {
+    fn default() -> Self {
+        Self {
+            used:      true,
+            client_id: "1272345557276295310".to_owned(),
+        }
+    }
+}
 
-    #[serde(default = "default_discord_client_id")]
+#[derive(Deserialize, Debug)]
+#[serde(default)]
+pub struct DiscordConfig {
+    pub used:      bool,
     pub client_id: String,
 }
 
-const fn default_discord_used() -> bool { true }
+impl Default for GeneralConfig {
+    fn default() -> Self {
+        Self {
+            shuffle:       true,
+            playlist:      "/tmp/tuun/all.tpl".to_owned(),
+            music_dir:     format!("{}/Music", std::env::var("HOME").expect("$HOME not set")),
+            recent_length: 200,
+        }
+    }
+}
 
-fn default_discord_client_id() -> String { "1272345557276295310".to_owned() }
-
-#[derive(Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug)]
+#[serde(default)]
 pub struct GeneralConfig {
-    #[serde(default = "default_shuffle")]
-    pub shuffle: bool,
-
-    #[serde(default = "default_playlist")]
-    pub playlist: String,
-
-    #[serde(default = "default_music_dir")]
-    pub music_dir: String,
+    pub shuffle:       bool,
+    pub playlist:      String,
+    pub music_dir:     String,
+    pub recent_length: usize,
 }
 
-const fn default_shuffle() -> bool { true }
-
-fn default_playlist() -> String { "/tmp/tuun/all.tpl".to_owned() }
-
-fn default_music_dir() -> String {
-    format!(
-        "{}/Music",
-        env::var("HOME").expect("Couldn't find home directory ($HOME is not set)")
-    )
-}
-
-#[derive(Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug)]
+#[serde(default)]
 pub struct TuunFMConfig {
-    #[serde(default)]
     pub used: bool,
-
-    #[serde(default = "default_tuunfm_link")]
     pub link: String,
 }
 
-fn default_tuunfm_link() -> String { "http://127.0.0.1:8080".to_owned() }
+impl Default for TuunFMConfig {
+    fn default() -> Self {
+        Self {
+            used: false,
+            link: "http://127.0.0.1:8080".to_owned(),
+        }
+    }
+}
 
 impl Config {
     pub fn load() -> Self {
