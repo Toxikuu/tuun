@@ -8,6 +8,7 @@ use std::{
 
 use tracing::{
     debug,
+    info,
     instrument,
     trace,
     warn,
@@ -61,4 +62,36 @@ pub fn create_all_playlist() {
         .collect::<Vec<_>>();
 
     all_playlist.write(&songs);
+    info!("Created the all playlist")
+}
+
+#[instrument]
+pub fn create_recent_playlist() {
+    let path = PathBuf::from("/tmp/tuun/recent.tpl");
+
+    if path.exists() {
+        return
+    }
+
+    debug!("Creating the recent playlist...");
+    let recent_playlist = Playlist::new(path);
+
+    let mut songs = fs::read_dir(&CONFIG.general.music_dir)
+        .expect("Failed to read music directory")
+        .map_while(Result::ok)
+        .map(|e| e.path())
+        .filter_map(|e| {
+            if let Ok(m) = e.metadata() {
+                m.modified().ok().map(|modtime| (e, modtime))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    songs.sort_by_key(|(_, modtime)| modtime.to_owned());
+    let songs: Vec<PathBuf> = songs.iter().rev().map(|(f, _)| f.to_owned()).collect();
+    let capped = &songs[..songs.len().min(&CONFIG.general.recent_length - 1)];
+    recent_playlist.write(capped);
+    info!("Created the recent playlist")
 }
