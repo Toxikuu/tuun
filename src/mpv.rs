@@ -267,11 +267,13 @@ async fn handle_properties(json: Value) {
 #[instrument]
 pub async fn launch() {
     info!("Launching mpv...");
+    let to_shuffle: &str = if CONFIG.general.shuffle { "yes" } else { "no" };
     Command::new("mpv")
-        .arg(if CONFIG.general.shuffle { "--shuffle=yes" } else { "--shuffle=no" })
+        .arg(format!("--shuffle={to_shuffle}"))
         .arg("--really-quiet")
         .arg("--geometry=350x350+1400+80")
         .arg("--title='tuun-mpv'")
+        .arg("--loop-playlist=inf")
         .arg(format!("--input-ipc-server={SOCK_PATH}"))
         .args(prequeue())
         .spawn()
@@ -303,6 +305,7 @@ pub async fn launch() {
 fn prequeue() -> Vec<String> {
     let playlist = &CONFIG.general.playlist;
     if QUEUE.exists() {
+        debug!("Queue.tpl exists");
         vec![
             format!("--playlist={}", QUEUE.display()),
             format!("--playlist={playlist}"),
