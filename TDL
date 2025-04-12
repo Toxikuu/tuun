@@ -2,8 +2,6 @@
 
 TODO
 
-    Fix crash with [general] commented out in the config
-
     Vendor rustfm_scrobble
         Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
 
@@ -16,11 +14,13 @@ WIP
 
 DONEISH
 
+    Fix crash with [general] commented out in the config
+
     Merge this branch with master
 
     Drop dirs dependency
 
-    Support launching from q.sh
+    Support launching from quu.sh
 
     Loop support
 
