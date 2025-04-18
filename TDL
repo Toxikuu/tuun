@@ -15,6 +15,9 @@ WIP
 
 DONEISH
 
+    Make recent_length actually accurate
+        just don't subtract 1 lol
+
     Make now_playing LastFM thing happen after like 5 seconds of the song playing
 
     Allow the scrobble percentage to be configurable

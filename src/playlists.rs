@@ -91,7 +91,7 @@ pub fn create_recent_playlist() {
 
     songs.sort_by_key(|(_, modtime)| modtime.to_owned());
     let songs: Vec<PathBuf> = songs.iter().rev().map(|(f, _)| f.to_owned()).collect();
-    let capped = &songs[..songs.len().min(&CONFIG.general.recent_length - 1)];
+    let capped = &songs[..songs.len().min(CONFIG.general.recent_length)];
     recent_playlist.write(capped);
     info!("Created the recent playlist")
 }
