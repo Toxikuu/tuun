@@ -62,7 +62,7 @@ pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(N
 ///     10. Block forever on the hotkey handler
 #[tokio::main]
 async fn main() -> ! {
-    // set up logging
+    // Initialize logging
     let file_appender = rolling::never("/tmp/tuun", "log");
     let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
 
@@ -81,13 +81,13 @@ async fn main() -> ! {
 
     info!("Starting tuun");
 
-    // create /tmp/tuun
+    // Create /tmp/tuun
     if let Err(e) = fs::create_dir("/tmp/tuun").permit(|e| e.kind() == IOE::AlreadyExists) {
         error!("Failed to create /tmp/tuun: {e}");
         exit(1)
     }
 
-    // create lock
+    // Create lock
     if let Err(e) = fs::write("/tmp/tuun/tuun.lock", b"") {
         error!("Failed to write to tuun.lock: {e}");
         exit(1)
@@ -101,16 +101,16 @@ async fn main() -> ! {
         exit(1)
     }
 
-    // create auto-generated playlists
+    // Create auto-generated playlists
     playlists::create_all_playlist();
     playlists::create_recent_playlist();
 
-    // connect to discord if it's used
+    // Connect to discord if it's used
     if CONFIG.discord.used {
         connect_discord_rpc_client().await;
     }
 
-    // authenticate lastfm scrobbler in the background if it's used
+    // Authenticate LastFM scrobbler in the background if it's used
     if CONFIG.lastfm.used {
         tokio::spawn(async {
             if let Err(e) = integrations::authenticate_lastfm_scrobbler().await {
@@ -121,13 +121,13 @@ async fn main() -> ! {
         });
     }
 
-    // launch tuunfm if it's used
+    // Launch tuunfm if it's used
     if CONFIG.tuunfm.used {
         start_process("tuunfm").await;
         info!("Started tuunfm");
     }
 
-    // launch mpv
+    // Launch mpv
     tokio::spawn(async {
         info!("Launching MPV");
         mpv::launch().await;
@@ -136,7 +136,7 @@ async fn main() -> ! {
         }
     });
 
-    // register hotkey handler
+    // Register hotkey handler
     register_global_hotkey_handler().await; // This should never return
     error!("Global hotkey handler died(?)");
 

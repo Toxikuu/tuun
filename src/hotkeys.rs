@@ -81,6 +81,7 @@ fn handle_hotkeys() -> Result<()> {
     Ok(())
 }
 
+// NOTE: This function should block forever. `-> !` is not used because rustc complains.
 pub async fn register_global_hotkey_handler() {
     info!("Registered global hotkey handler");
     let callback = |event: Event| {
