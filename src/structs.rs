@@ -4,6 +4,7 @@ use std::{
         self,
         Write,
     },
+    sync::atomic::Ordering,
 };
 
 use anyhow::Result;
@@ -19,7 +20,12 @@ use tracing::{
 use crate::{
     CONFIG,
     integrations,
-    mpv::send_command,
+    mpv::{
+        LOOPED,
+        MUTED,
+        VOLUME,
+        send_command,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -144,22 +150,40 @@ impl Track {
     pub fn display(&self) {
         trace!("Displaying track:\n{self:#?}");
         print!("{esc}[2J{esc}[1;1H{esc}[?251", esc = 27 as char);
-        if io::stdout().flush().is_err() {
+        if let Err(e) = io::stdout().flush() {
+            warn!("Failed to clear: {e:#?}");
             return;
         }
+
+        let loop_display = if LOOPED.load(Ordering::Relaxed) { "(loop)" } else { "" };
+        let mute_display = if MUTED.load(Ordering::Relaxed) { "(mute)" } else { "" };
+
         print!(
             "\
-\x1b[36;1mTUUN\x1b[0m
+\x1b[36;1mTUUN {}\x1b[0m
 
 \x1b[36;1m01 \x1b[30m::: Ttl - \x1b[37m{}\x1b[0m
 \x1b[36;1m02 \x1b[30m::: Art - \x1b[37m{}\x1b[0m
 \x1b[36;1m03 \x1b[30m::: Alb - \x1b[37m{}\x1b[0m
 \x1b[36;1m04 \x1b[30m::: Dte - \x1b[37m{}\x1b[0m
-\x1b[36;1m05 \x1b[30m::: Prg - \x1b[37m{:.3}/{:.3}\x1b[0m",
-            self.title, self.artist, self.album, self.date, self.progress, self.duration
+\x1b[36;1m05 \x1b[30m::: Vol - \x1b[37m{} {}\x1b[0m
+\x1b[36;1m06 \x1b[30m::: Prg - \x1b[37m{:.3}/{:.3} {}\x1b[0m",
+            env!("CARGO_PKG_VERSION"),
+            self.title,
+            self.artist,
+            self.album,
+            self.date,
+            VOLUME.load(Ordering::Relaxed),
+            mute_display,
+            self.progress,
+            self.duration,
+            loop_display,
         );
 
-        let _ = io::stdout().flush();
+        if let Err(e) = io::stdout().flush() {
+            warn!("Failed to print metadata: {e:#?}");
+            return; // redundant but explicit
+        }
     }
 
     #[instrument]

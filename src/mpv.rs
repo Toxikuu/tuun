@@ -7,6 +7,7 @@ use std::{
         LazyLock,
         atomic::{
             AtomicBool,
+            AtomicU64,
             Ordering,
         },
     },
@@ -47,6 +48,8 @@ use crate::{
 const SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
 pub static LOOPED: AtomicBool = AtomicBool::new(false);
 pub static PAUSED: AtomicBool = AtomicBool::new(false);
+pub static MUTED: AtomicBool = AtomicBool::new(false);
+pub static VOLUME: AtomicU64 = AtomicU64::new(0);
 static FRESH: AtomicBool = AtomicBool::new(false);
 static TRACK: Lazy<Arc<Mutex<Track>>> = Lazy::new(|| Arc::new(Mutex::new(Track::default())));
 static QUEUE: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("/tmp/tuun/quu.tpl"));
@@ -66,6 +69,7 @@ pub async fn connect() -> Result<()> {
         r#"{"command": ["observe_property", 4, "mute"]}"#,
         r#"{"command": ["observe_property", 5, "playback-time"]}"#,
         r#"{"command": ["observe_property", 6, "metadata"]}"#,
+        r#"{"command": ["observe_property", 7, "volume"]}"#,
     ];
 
     // Send all subscription commands
@@ -207,9 +211,21 @@ async fn handle_properties(json: Value) {
                 };
                 debug!("LOOPED set to {}", LOOPED.load(Ordering::Relaxed));
             },
+            | "volume" => {
+                info!("MPV: Property: Volume changed");
+                debug!("Volume: {json:#}");
+                if let Some(vol) = json.get("data").and_then(|v| v.as_f64()) {
+                    VOLUME.store(vol as u64, Ordering::Relaxed);
+                }
+                debug!("VOLUME set to {}", VOLUME.load(Ordering::Relaxed));
+            },
             | "mute" => {
                 info!("MPV Property: Mute toggled");
                 debug!("Mute property: {json:#}");
+                if let Some(muted) = json.get("data").and_then(|v| v.as_bool()) {
+                    MUTED.store(muted, Ordering::Relaxed);
+                }
+                debug!("MUTED set to {}", MUTED.load(Ordering::Relaxed));
             },
             | "playback-time" => {
                 trace!("MPV Property: Playback time changed");
