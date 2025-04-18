@@ -2,7 +2,8 @@
 
 TODO
 
-    Switch from winit to rdev
+    Make global hotkey usage configurable
+        Also allow the hotkeys themselves to be configured
 
     Vendor rustfm_scrobble
         Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
@@ -13,6 +14,10 @@ TODO
 WIP
 
 DONEISH
+
+    Allow the scrobble percentage to be configurable
+
+    Switch from winit to rdev
 
     Give an error message when the playlist file doesn't exist instead of just hanging
 
