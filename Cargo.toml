@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "3.3.0" # dropped winit in favor of rdev for hotkeys
+version = "3.4.0" # updated readme and default config, run lastfm now_playing separate from scrobble logic, make scrobble delay percent configurable
 edition = "2024"
 authors = [ "Toxikuu" ]
 description = "A simple music player using MPV as a backend"
