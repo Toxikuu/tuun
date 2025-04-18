@@ -1,20 +1,32 @@
-# [lastfm]
-# used = true
-# apikey = "<your lastfm api key>"
-# secret = "<your lastfm secret>"
-# user = "<your lastfm username>"
-# password = "<your lastfm password>"
+# Template config
+# Defaults are given here. If a field is not specified, its default is used.
 
-# [discord]
-# used = true  # defaults to true
-# client_id = "1272345557276295310"  # you can specify a custom one if you like; the default is mine
+[lastfm]
+used = false
+apikey = "<your lastfm api key>"
+secret = "<your lastfm secret>"
+user = "<your lastfm username>"
+password = "<your lastfm password>"
+# percent of the song that must play before scrobbles
+# should be a whole number between 10 and 100
+scrobble_percent = 44
 
-# [general]
-# shuffle = true  # defaults to true
-# music_dir = "~/Music"  # defaults to ~/Music
-# playlist = "~/Music/Playlists/new.tpl"  # plays all tracks in the music dir if not specified
+[discord]
+used = true
+# you can override my client ID with yours if you like
+client_id = "1272345557276295310"
+
+[general]
+shuffle = true
+# `$HOME` and `~` are the only path expansions allowed
+music_dir = "~/Music"
+# if playlist is not specified, /tmp/tuun/all.tpl is used
+# a tpl file is just a plain-text new-line-delimited list of absolute paths
+playlist = "~/Music/Playlists/new.tpl"
+# how many songs the /tmp/tuun/recent.tpl should consist of
+recent_length = 200
 
 # tuunfm is currently not supported
-# [tuunfm]
-# used = true
-# link = "http://127.0.0.1:8080"
+[tuunfm]
+used = true
+link = "http://127.0.0.1:8080"
