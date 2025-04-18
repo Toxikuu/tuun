@@ -304,6 +304,10 @@ pub async fn launch() {
 #[instrument]
 fn prequeue() -> Vec<String> {
     let playlist = &CONFIG.general.playlist;
+    if !PathBuf::from(playlist).exists() {
+        error!("Playlist '{playlist}' does not exist");
+        panic!("Playlist '{playlist}' does not exist");
+    }
     if QUEUE.exists() {
         debug!("Queue.tpl exists");
         vec![
