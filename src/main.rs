@@ -13,7 +13,6 @@ use std::{
     sync::LazyLock,
 };
 
-use anyhow::Result;
 use config::Config;
 use discord_rich_presence::DiscordIpcClient;
 use hotkeys::register_global_hotkey_handler;
@@ -47,8 +46,22 @@ pub static RPC_CLIENT: LazyLock<Mutex<DiscordIpcClient>> =
     LazyLock::new(|| Mutex::new(DiscordIpcClient::new(&CONFIG.discord.client_id)));
 pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(None));
 
+/// # Description
+/// Main loop (should never return)
+///
+/// Does stuff in this order:
+///     1. Initialize logging
+///     2. Create `/tmp/tuun`
+///     3. Create `/tmp/tuun/tuun.lock`
+///     4. Establish the music directory
+///     5. Generate playlists
+///     6. Optionally connect to Discord
+///     7. Optionally authenticate with LastFM
+///     8. Optionally launch TuunFM
+///     9. Launch MPV
+///     10. Block forever on the hotkey handler
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> ! {
     // set up logging
     let file_appender = rolling::never("/tmp/tuun", "log");
     let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
@@ -124,10 +137,10 @@ async fn main() -> Result<()> {
     });
 
     // register hotkey handler
-    register_global_hotkey_handler().await;
-    info!("Registered global hotkey handler");
+    register_global_hotkey_handler().await; // This should never return
+    error!("Global hotkey handler died(?)");
 
-    Ok(())
+    exit(0)
 }
 
 /// Utility function to check if a process is running
