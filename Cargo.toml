@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "3.1.0" # refactoring, recent playlist support, misc improvements
+version = "3.2.0" # better hotkeys, volume, loop, mute display, bugfix hang on missing playlists, slightly better error handling
 edition = "2024"
 authors = [ "Toxikuu" ]
 description = "A simple music player using MPV as a backend"
