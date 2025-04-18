@@ -73,7 +73,7 @@ pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
 }
 
 #[instrument(skip(track))]
-pub async fn lastfm_scrobble(track: Track) -> Result<()> {
+pub async fn lastfm_now_playing(track: Track) -> Result<()> {
     let scrobbler_lock = SCROBBLER.lock().await;
 
     let Some(scrobbler) = &*scrobbler_lock else {
@@ -84,7 +84,22 @@ pub async fn lastfm_scrobble(track: Track) -> Result<()> {
     let track = Scrobble::new(&track.artist, &track.title, &track.album);
 
     scrobbler.now_playing(&track)?;
-    debug!("Set lastfm now playing to {track:#?}");
+    debug!("Set LastFM now playing to {track:#?}");
+
+    Ok(())
+}
+
+#[instrument(skip(track))]
+pub async fn lastfm_scrobble(track: Track) -> Result<()> {
+    let scrobbler_lock = SCROBBLER.lock().await;
+
+    let Some(scrobbler) = &*scrobbler_lock else {
+        error!("Scrobbler is not initialized");
+        bail!("Scrobbler is not initialized");
+    };
+
+    let track = Scrobble::new(&track.artist, &track.title, &track.album);
+
     scrobbler.scrobble(&track)?;
     debug!("Scrobbled {track:#?}");
 

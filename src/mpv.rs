@@ -41,16 +41,23 @@ use tracing::{
 
 use crate::{
     CONFIG,
-    integrations::lastfm_scrobble,
+    integrations::{
+        lastfm_now_playing,
+        lastfm_scrobble,
+    },
     structs::Track,
 };
 
 const SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
+
 pub static LOOPED: AtomicBool = AtomicBool::new(false);
 pub static PAUSED: AtomicBool = AtomicBool::new(false);
 pub static MUTED: AtomicBool = AtomicBool::new(false);
 pub static VOLUME: AtomicU64 = AtomicU64::new(0);
+
 static FRESH: AtomicBool = AtomicBool::new(false);
+static NOW_PLAYING_SET: AtomicBool = AtomicBool::new(false);
+
 static TRACK: Lazy<Arc<Mutex<Track>>> = Lazy::new(|| Arc::new(Mutex::new(Track::default())));
 static QUEUE: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("/tmp/tuun/quu.tpl"));
 
@@ -241,10 +248,31 @@ async fn handle_properties(json: Value) {
 
                 if time == 0. {
                     FRESH.store(true, Ordering::Relaxed);
+                    NOW_PLAYING_SET.store(false, Ordering::Relaxed);
                     debug!("Registered track '{track:#?}' as fresh");
                 }
 
                 track.display();
+
+                // Set LastFM now playing if the track has been playing for 5 seconds, or it's more
+                // than 5% through.
+                if time >= (track.duration * 0.05).min(5.)
+                    && !NOW_PLAYING_SET.load(Ordering::Relaxed)
+                {
+                    NOW_PLAYING_SET.store(true, Ordering::Relaxed);
+
+                    if CONFIG.lastfm.used {
+                        info!("Setting LastFM now playing");
+                        let track_copy = track.clone();
+                        tokio::spawn(async move {
+                            if let Err(e) = lastfm_now_playing(track_copy).await {
+                                error!("Failed to set LastFM now playing: {e:#?}");
+                            }
+                        });
+                    }
+                }
+
+                // Scrobble track if it's more than a configurable percent through.
                 if time >= (track.duration * (CONFIG.lastfm.scrobble_percent as f64 / 100.))
                     && FRESH.load(Ordering::Relaxed)
                 {
