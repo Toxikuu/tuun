@@ -38,7 +38,9 @@ struct App {
 }
 
 impl App {
-    fn is_key_held(&self, key: PhysicalKey) -> bool { self.pressed_keys.contains(&key) }
+    fn key_combo(&self, keys: &[PhysicalKey]) -> bool {
+        self.pressed_keys == keys.iter().cloned().collect::<HashSet<_>>()
+    }
 }
 
 impl ApplicationHandler for App {
@@ -82,36 +84,46 @@ impl ApplicationHandler for App {
     }
 }
 
+macro_rules! pkey {
+    ($key:ident) => {
+        PhysicalKey::Code(KeyCode::$key)
+    };
+}
+
+macro_rules! pkeys {
+    ( $( $key:ident ),* ) => {
+        &[
+            $( pkey!($key), )*
+        ]
+    };
+}
+
 fn handle_hotkeys(app: &App) -> Result<()> {
-    if app.is_key_held(PhysicalKey::Code(KeyCode::SuperLeft)) {
-        if app.is_key_held(PhysicalKey::Code(KeyCode::AltLeft)) {
-            if app.is_key_held(PhysicalKey::Code(KeyCode::KeyL)) {
-                debug!("Loop registered by hotkey handler");
-                if mpv::LOOPED.load(Ordering::Relaxed) {
-                    mpv::send_command_blocking(r#"{ "command": ["set", "loop-file", "no"] }"#)?;
-                } else {
-                    mpv::send_command_blocking(r#"{ "command": ["set", "loop-file", "inf"] }"#)?;
-                }
-            } else if app.is_key_held(PhysicalKey::Code(KeyCode::KeyM)) {
-                debug!("Mute registered by hotkey handler");
-                mpv::send_command_blocking(r#"{ "command": ["cycle", "mute"] }"#)?;
-            }
-        } else if app.is_key_held(PhysicalKey::Code(KeyCode::KeyK)) {
-            debug!("Pause registered by hotkey handler");
-            mpv::send_command_blocking(r#"{ "command": ["cycle", "pause"] }"#)?;
-        } else if app.is_key_held(PhysicalKey::Code(KeyCode::KeyL)) {
-            debug!("Next registered by hotkey handler");
-            mpv::send_command_blocking(r#"{ "command": ["playlist-next"] }"#)?;
-        } else if app.is_key_held(PhysicalKey::Code(KeyCode::KeyJ)) {
-            debug!("Previous registered by hotkey handler");
-            mpv::send_command_blocking(r#"{ "command": ["playlist-prev"] }"#)?;
-        } else if app.is_key_held(PhysicalKey::Code(KeyCode::Comma)) {
-            debug!("Seek back registered by hotkey handler");
-            mpv::send_command_blocking(r#"{ "command": ["seek", "-5", "relative", "exact"] }"#)?;
-        } else if app.is_key_held(PhysicalKey::Code(KeyCode::Period)) {
-            debug!("Seek forward registered by hotkey handler");
-            mpv::send_command_blocking(r#"{ "command": ["seek", "5", "relative", "exact"] }"#)?;
+    if app.key_combo(pkeys!(SuperLeft, AltLeft, KeyL)) {
+        debug!("Loop registered by hotkey handler");
+        if mpv::LOOPED.load(Ordering::Relaxed) {
+            mpv::send_command_blocking(r#"{ "command": ["set", "loop-file", "no"] }"#)?;
+        } else {
+            mpv::send_command_blocking(r#"{ "command": ["set", "loop-file", "inf"] }"#)?;
         }
+    } else if app.key_combo(pkeys!(SuperLeft, AltLeft, KeyM)) {
+        debug!("Mute registered by hotkey handler");
+        mpv::send_command_blocking(r#"{ "command": ["cycle", "mute"] }"#)?;
+    } else if app.key_combo(pkeys!(SuperLeft, KeyK)) {
+        debug!("Pause registered by hotkey handler");
+        mpv::send_command_blocking(r#"{ "command": ["cycle", "pause"] }"#)?;
+    } else if app.key_combo(pkeys!(SuperLeft, KeyL)) {
+        debug!("Next registered by hotkey handler");
+        mpv::send_command_blocking(r#"{ "command": ["playlist-next"] }"#)?;
+    } else if app.key_combo(pkeys!(SuperLeft, KeyJ)) {
+        debug!("Previous registered by hotkey handler");
+        mpv::send_command_blocking(r#"{ "command": ["playlist-prev"] }"#)?;
+    } else if app.key_combo(pkeys!(SuperLeft, Comma)) {
+        debug!("Seek back registered by hotkey handler");
+        mpv::send_command_blocking(r#"{ "command": ["seek", "-5", "relative", "exact"] }"#)?;
+    } else if app.key_combo(pkeys!(SuperLeft, Period)) {
+        debug!("Seek forward registered by hotkey handler");
+        mpv::send_command_blocking(r#"{ "command": ["seek", "5", "relative", "exact"] }"#)?;
     }
 
     Ok(())
