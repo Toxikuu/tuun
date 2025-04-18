@@ -2,17 +2,24 @@
 
 TODO
 
+    Switch from winit to rdev
+
     Vendor rustfm_scrobble
         Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
 
     Add a utility, call it tm, for adding arbitrary metadata
         (ideally open all the fields in $EDITOR and allow editing)
 
-    Add a field Vol that tracks mpv volume
-
 WIP
 
 DONEISH
+
+    Give an error message when the playlist file doesn't exist instead of just hanging
+
+    Add a field Vol that tracks mpv volume
+        Add a (mute) indicator following it
+
+    Add a (loop) indicator following the Prg field
 
     Fix crash with [general] commented out in the config
 
