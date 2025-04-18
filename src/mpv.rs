@@ -245,7 +245,9 @@ async fn handle_properties(json: Value) {
                 }
 
                 track.display();
-                if time >= (track.duration / 4.) && FRESH.load(Ordering::Relaxed) {
+                if time >= (track.duration * (CONFIG.lastfm.scrobble_percent as f64 / 100.))
+                    && FRESH.load(Ordering::Relaxed)
+                {
                     FRESH.store(false, Ordering::Relaxed);
 
                     if CONFIG.lastfm.used {

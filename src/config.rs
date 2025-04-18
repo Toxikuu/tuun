@@ -36,11 +36,12 @@ pub struct Config {
 impl Default for LastFMConfig {
     fn default() -> Self {
         Self {
-            used:     false,
-            apikey:   String::with_capacity(0),
-            secret:   String::with_capacity(0),
-            user:     String::with_capacity(0),
-            password: String::with_capacity(0),
+            used:             false,
+            apikey:           String::with_capacity(0),
+            secret:           String::with_capacity(0),
+            user:             String::with_capacity(0),
+            password:         String::with_capacity(0),
+            scrobble_percent: 44,
         }
     }
 }
@@ -48,11 +49,12 @@ impl Default for LastFMConfig {
 #[derive(Deserialize, Debug)]
 #[serde(default)]
 pub struct LastFMConfig {
-    pub used:     bool,
-    pub apikey:   String,
-    pub secret:   String,
-    pub user:     String,
-    pub password: String,
+    pub used:             bool,
+    pub apikey:           String,
+    pub secret:           String,
+    pub user:             String,
+    pub password:         String,
+    pub scrobble_percent: u8,
 }
 
 impl Default for DiscordConfig {
