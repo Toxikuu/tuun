@@ -33,6 +33,7 @@ impl Playlist {
     pub fn write(&self, songs: &[PathBuf]) {
         let contents = songs
             .iter()
+            .filter(|p| p.is_file())
             .map(|song| song.to_string_lossy())
             .collect::<Vec<_>>()
             .join("\n");
@@ -59,6 +60,7 @@ pub fn create_all_playlist() {
         .expect("Failed to read music directory")
         .map_while(Result::ok)
         .map(|e| e.path())
+        .filter(|p| p.is_file())
         .collect::<Vec<_>>();
 
     all_playlist.write(&songs);
