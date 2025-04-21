@@ -155,8 +155,8 @@ impl Track {
             return;
         }
 
-        let loop_display = if LOOPED.load(Ordering::Relaxed) { "(loop)" } else { "" };
-        let mute_display = if MUTED.load(Ordering::Relaxed) { "(mute)" } else { "" };
+        let loop_display = if LOOPED.load(Ordering::Relaxed) { "(looped)" } else { "" };
+        let mute_display = if MUTED.load(Ordering::Relaxed) { "(muted)" } else { "" };
 
         print!(
             "\
