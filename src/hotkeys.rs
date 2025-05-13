@@ -51,14 +51,14 @@ macro_rules! keys {
 }
 
 fn handle_hotkeys() -> Result<()> {
-    if key_combo(keys!(MetaLeft, Alt, KeyL)) {
+    if key_combo(keys!(MetaLeft, Alt, KeyL)) || key_combo(keys!(MetaLeft, AltGr, KeyL)) {
         debug!("Loop registered by hotkey handler");
         if mpv::LOOPED.load(Ordering::Relaxed) {
             mpv::send_command_blocking(r#"{ "command": ["set", "loop-file", "no"] }"#)?;
         } else {
             mpv::send_command_blocking(r#"{ "command": ["set", "loop-file", "inf"] }"#)?;
         }
-    } else if key_combo(keys!(MetaLeft, Alt, KeyM)) {
+    } else if key_combo(keys!(MetaLeft, Alt, KeyM)) || key_combo(keys!(MetaLeft, AltGr, KeyM)) {
         debug!("Mute registered by hotkey handler");
         mpv::send_command_blocking(r#"{ "command": ["cycle", "mute"] }"#)?;
     } else if key_combo(keys!(MetaLeft, KeyK)) {
@@ -121,7 +121,7 @@ pub async fn register_global_hotkey_handler() {
         warn!("Failed to start global hotkey listener: {e:?}");
         warn!("Global hotkeys will not work");
         loop {
-            sleep(Duration::from_secs(5));
+            sleep(Duration::from_secs(30));
         }
     }
 }
