@@ -19,6 +19,7 @@ use tracing::{
 
 use crate::{
     CONFIG,
+    config::ColorConfig,
     integrations,
     mpv::{
         LOOPED,
@@ -146,43 +147,54 @@ impl Track {
         trace!("Updated progress to {progress}");
     }
 
+    fn format_metadata(&self) -> String {
+        let loop_display = if LOOPED.load(Ordering::Relaxed) { " (looped)" } else { "" };
+        let mute_display = if MUTED.load(Ordering::Relaxed) { " (muted)" } else { "" };
+
+        let theme = Theme::from(&CONFIG.color);
+
+        format!(
+            "\
+{b}{p}TUUN {ver}{r}
+
+{b}{p}01 {s}{sep} Ttl - {t}{title}{r}
+{b}{p}02 {s}{sep} Art - {t}{artist}{r}
+{b}{p}03 {s}{sep} Alb - {t}{album}{r}
+{b}{p}04 {s}{sep} Dte - {t}{date}{r}
+{b}{p}05 {s}{sep} Vol - {t}{volume}{muted}{r}
+{b}{p}06 {s}{sep} Prg - {t}{progress:.3}/{duration:.3}{looped}{r}",
+            p = theme.p,
+            s = theme.s,
+            t = theme.t,
+            r = "\x1b[0m",
+            b = "\x1b[1m",
+            sep = ":::",
+            ver = env!("CARGO_PKG_VERSION"),
+            title = self.title,
+            artist = self.artist,
+            album = self.album,
+            date = self.date,
+            volume = VOLUME.load(Ordering::Relaxed),
+            muted = mute_display,
+            progress = self.progress,
+            duration = self.duration,
+            looped = loop_display,
+        )
+    }
+
     #[instrument]
     pub fn display(&self) {
         trace!("Displaying track:\n{self:#?}");
-        print!("{esc}[2J{esc}[1;1H{esc}[?251", esc = 27 as char);
-        if let Err(e) = io::stdout().flush() {
-            warn!("Failed to clear: {e:#?}");
-            return;
+        if let Err(e) = cls() {
+            warn!("Failed to cls: {e}");
+            return
         }
 
-        let loop_display = if LOOPED.load(Ordering::Relaxed) { "(looped)" } else { "" };
-        let mute_display = if MUTED.load(Ordering::Relaxed) { "(muted)" } else { "" };
-
-        print!(
-            "\
-\x1b[36;1mTUUN {}\x1b[0m
-
-\x1b[36;1m01 \x1b[30m::: Ttl - \x1b[37m{}\x1b[0m
-\x1b[36;1m02 \x1b[30m::: Art - \x1b[37m{}\x1b[0m
-\x1b[36;1m03 \x1b[30m::: Alb - \x1b[37m{}\x1b[0m
-\x1b[36;1m04 \x1b[30m::: Dte - \x1b[37m{}\x1b[0m
-\x1b[36;1m05 \x1b[30m::: Vol - \x1b[37m{} {}\x1b[0m
-\x1b[36;1m06 \x1b[30m::: Prg - \x1b[37m{:.3}/{:.3} {}\x1b[0m",
-            env!("CARGO_PKG_VERSION"),
-            self.title,
-            self.artist,
-            self.album,
-            self.date,
-            VOLUME.load(Ordering::Relaxed),
-            mute_display,
-            self.progress,
-            self.duration,
-            loop_display,
-        );
+        let out = self.format_metadata();
+        print!("{out}");
 
         if let Err(e) = io::stdout().flush() {
             warn!("Failed to print metadata: {e:#?}");
-            return; // redundant but explicit
         }
     }
 
@@ -209,4 +221,58 @@ impl fmt::Display for Track {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} - {}", self.artist, self.title)
     }
+}
+
+fn hex_to_rgb(hex: &str) -> Option<(u8, u8, u8)> {
+    let hex = hex.trim_start_matches('#');
+    match hex.len() {
+        | 3 => {
+            let r = u8::from_str_radix(&hex[0..1].repeat(2), 16).ok()?;
+            let g = u8::from_str_radix(&hex[1..2].repeat(2), 16).ok()?;
+            let b = u8::from_str_radix(&hex[2..3].repeat(2), 16).ok()?;
+            Some((r, g, b))
+        },
+        | 6 => {
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            Some((r, g, b))
+        },
+        | _ => None,
+    }
+}
+
+fn fg_rgb(r: u8, g: u8, b: u8) -> String { format!("\x1b[38;2;{r};{g};{b}m") }
+
+fn fg_hex(hex: &str) -> String {
+    if let Some((r, g, b)) = hex_to_rgb(hex) {
+        fg_rgb(r, g, b)
+    } else {
+        String::new()
+    }
+}
+
+#[derive(Debug)]
+pub struct Theme {
+    /// primary
+    pub p: String,
+    /// secondary
+    pub s: String,
+    /// tertiary
+    pub t: String,
+}
+
+impl From<&ColorConfig> for Theme {
+    fn from(cfg: &ColorConfig) -> Self {
+        Self {
+            p: fg_hex(&cfg.primary),
+            s: fg_hex(&cfg.secondary),
+            t: fg_hex(&cfg.tertiary),
+        }
+    }
+}
+
+fn cls() -> io::Result<()> {
+    print!("{esc}[2J{esc}[1;1H{esc}[?251", esc = 27 as char);
+    io::stdout().flush()
 }

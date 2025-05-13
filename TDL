@@ -8,12 +8,15 @@ TODO
     Vendor rustfm_scrobble
         Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
 
-    Add a utility, call it tm, for adding arbitrary metadata
-        (ideally open all the fields in $EDITOR and allow editing)
-
 WIP
 
 DONEISH
+
+    Add a utility, call it tm, for adding arbitrary metadata
+        (ideally open all the fields in $EDITOR and allow editing)
+        (currently separate from tuun; might publish eventually)
+
+    Make the colors configurable
 
     Make recent_length actually accurate
         just don't subtract 1 lol

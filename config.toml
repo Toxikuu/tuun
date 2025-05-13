@@ -16,6 +16,14 @@ used = true
 # you can override my client ID with yours if you like
 client_id = "1272345557276295310"
 
+# hex code
+# 6-char and 3-char are supported
+# starting # is optional
+[color]
+primary = "#f35f7a"
+secondary = "3b4e84"
+tertiary = "#e5e5e5"
+
 [general]
 shuffle = true
 # `$HOME` and `~` are the only path expansions allowed

@@ -30,6 +30,7 @@ pub struct Config {
     pub lastfm:  LastFMConfig,
     pub discord: DiscordConfig,
     pub general: GeneralConfig,
+    pub color:   ColorConfig,
     pub tuunfm:  TuunFMConfig,
 }
 
@@ -80,6 +81,24 @@ impl Default for GeneralConfig {
             playlist:      "/tmp/tuun/all.tpl".to_owned(),
             music_dir:     format!("{}/Music", std::env::var("HOME").expect("$HOME not set")),
             recent_length: 200,
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(default)]
+pub struct ColorConfig {
+    pub primary:   String,
+    pub secondary: String,
+    pub tertiary:  String,
+}
+
+impl Default for ColorConfig {
+    fn default() -> Self {
+        Self {
+            primary:   "#f35f7a".to_string(),
+            secondary: "#3b4e84".to_string(),
+            tertiary:  "#e5e5e5".to_string(),
         }
     }
 }
