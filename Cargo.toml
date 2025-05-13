@@ -1,6 +1,6 @@
 [package]
 name = "tuun"
-version = "3.5.0" # color config
+version = "3.5.1" # hotkey tweaks (right alt works now)
 edition = "2024"
 authors = [ "Toxikuu" ]
 description = "A simple music player using MPV as a backend"
