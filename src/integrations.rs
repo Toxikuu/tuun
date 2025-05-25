@@ -128,7 +128,7 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
         let mut client = RPC_CLIENT.lock().await;
 
         if let Err(e) = client.clear_activity() {
-            error!("Failed to clear rich presence activity: {}", e.to_string());
+            error!("Failed to clear rich presence activity: {e}");
 
             warn!("Reconnecting Discord RPC client...");
             connect_discord_rpc_client().await;
@@ -138,8 +138,7 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
         debug!("Setting Discord RPC for {track:#?}");
 
         if let Err(e) = client.set_activity(payload) {
-            let error_str = e.to_string();
-            error!("Failed to set activity: {error_str}");
+            error!("Failed to set activity: {e}");
 
             drop(client);
             connect_discord_rpc_client().await;
