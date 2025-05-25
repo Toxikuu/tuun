@@ -2,6 +2,8 @@
 
 TODO
 
+    Add configure, Makefile prefix should default to /usr/local
+
     Make global hotkey usage configurable
         Also allow the hotkeys themselves to be configured
 
