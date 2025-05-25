@@ -36,5 +36,5 @@ recent_length = 200
 
 # tuunfm is currently not supported
 [tuunfm]
-used = true
+used = false
 link = "http://127.0.0.1:8080"
