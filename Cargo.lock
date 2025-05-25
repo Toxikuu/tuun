@@ -1374,7 +1374,7 @@ dependencies = [
 
 [[package]]
 name = "tuun"
-version = "3.5.2"
+version = "3.5.3"
 dependencies = [
  "anyhow",
  "discord-rich-presence",
