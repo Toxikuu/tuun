@@ -61,8 +61,9 @@ pub struct LastFMConfig {
 impl Default for DiscordConfig {
     fn default() -> Self {
         Self {
-            used:      true,
-            client_id: "1272345557276295310".to_owned(),
+            used:         true,
+            client_id:    "1272345557276295310".to_owned(),
+            fallback_art: "https://w7.pngwing.com/pngs/387/453/png-transparent-phonograph-record-lp-record-45-rpm-album-concerts-miscellaneous-photography-sound-thumbnail.png".to_owned(),
         }
     }
 }
@@ -70,8 +71,9 @@ impl Default for DiscordConfig {
 #[derive(Deserialize, Debug)]
 #[serde(default)]
 pub struct DiscordConfig {
-    pub used:      bool,
-    pub client_id: String,
+    pub used:         bool,
+    pub client_id:    String,
+    pub fallback_art: String,
 }
 
 impl Default for GeneralConfig {

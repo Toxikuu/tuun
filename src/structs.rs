@@ -135,8 +135,8 @@ impl Track {
         self.arturl = data
             .get("arturl")
             .and_then(|v| v.as_str())
-            .unwrap_or("https://w7.pngwing.com/pngs/387/453/png-transparent-phonograph-record-lp-record-45-rpm-album-concerts-miscellaneous-photography-sound-thumbnail.png")
-            .to_string(); // unknown album art ^
+            .unwrap_or(&CONFIG.discord.fallback_art)
+            .to_string();
         self.duration = dur;
 
         Ok(())
