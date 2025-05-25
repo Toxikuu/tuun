@@ -7,11 +7,11 @@ clean:
 	cargo clean
 
 install:
-	install -Dm644 ./config.toml /usr/share/tuun/default_config.toml
-	install -Dm755 target/release/tuun /usr/libexec/tuun
-	install -Dm755 tuun.sh /usr/bin/tuun
-	install -Dm755 quu.sh /usr/bin/quu
+	install -Dm644 ./config.toml       $(DESTDIR)/usr/share/tuun/default_config.toml
+	install -Dm755 target/release/tuun $(DESTDIR)/usr/libexec/tuun
+	install -Dm755 tuun.sh             $(DESTDIR)/usr/bin/tuun
+	install -Dm755 quu.sh              $(DESTDIR)/usr/bin/quu
 
 uninstall:
-	rm -rf /usr/share/tuun /tmp/tuun
-	rm -f /usr/libexec/tuun /usr/bin/tuun /usr/bin/quu
+	rm -rf $(DESTDIR)/usr/share/tuun   $(DESTDIR)/tmp/tuun
+	rm -f  $(DESTDIR)/usr/libexec/tuun $(DESTDIR)/usr/bin/tuun $(DESTDIR)/usr/bin/quu
