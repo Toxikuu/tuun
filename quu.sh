@@ -10,7 +10,7 @@ if [[ ! -d "$SONG_DIR" ]]; then
     exit 1
 fi
 
-mapfile -t FULL_PATHS < <(find "$SONG_DIR" -type f \( -iname "*.mp3" -o -iname "*.opus" -o -iname "*.wav" -o -iname "*.m4a" -o -iname "*.ogg" \))
+mapfile -t FULL_PATHS < <(find "$SONG_DIR" -type f \( -iname "*.mp3" -o -iname "*.opus" -o -iname "*.wav" -o -iname "*.m4a" -o -iname "*.ogg" -o -iname "*.flac" \))
 if [[ ${#FULL_PATHS[@]} -eq 0 ]]; then
     echo "No songs found in directory: $SONG_DIR"
     exit 1
