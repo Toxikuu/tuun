@@ -4,8 +4,7 @@ TODO
 
     Add configure, Makefile prefix should default to /usr/local
 
-    Make global hotkey usage configurable
-        Also allow the hotkeys themselves to be configured
+    Outsource global hotkey management and set up a socket instead
 
     Vendor rustfm_scrobble
         Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
