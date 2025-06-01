@@ -2,6 +2,8 @@
 
 TODO
 
+    Integrate with mpd
+
     Add configure, Makefile prefix should default to /usr/local
 
     Outsource global hotkey management and set up a socket instead
