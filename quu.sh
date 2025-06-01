@@ -31,8 +31,9 @@ fi
 SEL="$(find "$SONG_DIR" -maxdepth 1 -mindepth 1 -type f \( -iname '*.mp3' -o -iname '*.opus' -o -iname '*.wav' -o -iname '*.m4a' -o -iname '*.ogg' -o -iname '*.flac' \) |
     sed 's,.*/,,'       | # strip full path
     shuf                | # shuffle
-    dmenu -c -l 32 -i -fn "Iosevka Nerd Font-8"   ||
-    exit 0)"
+    dmenu -c -l 32 -i -fn "Iosevka Nerd Font-8")"
+
+[ -z "$SEL" ] && exit 0
 
 # Write them to the queue, and apply some fixes:
 # 1. Prepend the song directory
