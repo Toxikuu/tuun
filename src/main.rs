@@ -15,7 +15,6 @@ use std::{
 
 use config::Config;
 use discord_rich_presence::DiscordIpcClient;
-use hotkeys::register_global_hotkey_handler;
 use integrations::connect_discord_rpc_client;
 use once_cell::sync::Lazy;
 use rustfm_scrobble::Scrobbler;
@@ -34,7 +33,6 @@ use tracing_subscriber::{
 use traits::Permit;
 
 mod config;
-mod hotkeys;
 mod integrations;
 mod mpv;
 mod playlists;
@@ -59,7 +57,7 @@ pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(N
 ///     7. Optionally authenticate with LastFM
 ///     8. Optionally launch TuunFM
 ///     9. Launch MPV
-///     10. Block forever on the hotkey handler
+///     10. Block forever
 #[tokio::main]
 async fn main() -> ! {
     // Initialize logging
@@ -136,11 +134,10 @@ async fn main() -> ! {
         }
     });
 
-    // Register hotkey handler
-    register_global_hotkey_handler().await; // This should never return
-    error!("Global hotkey handler died(?)");
-
-    exit(0)
+    // Hang out forever
+    loop {
+        std::thread::park();
+    }
 }
 
 /// Utility function to check if a process is running
