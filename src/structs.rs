@@ -4,11 +4,16 @@ use std::{
         self,
         Write,
     },
+    path::Path,
     sync::atomic::Ordering,
 };
 
 use anyhow::Result;
-use serde_json::Value;
+use id3::{
+    Content,
+    Tag,
+    TagLike,
+};
 use tracing::{
     debug,
     error,
@@ -28,6 +33,8 @@ use crate::{
         send_command,
     },
 };
+
+pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
 
 #[derive(Debug, Clone)]
 pub struct Track {
@@ -74,28 +81,52 @@ impl LastFM<'_> {
 }
 
 impl Track {
-    #[instrument(level = "debug", skip(metadata))]
-    pub async fn update_metadata(&mut self, metadata: &Value) -> Result<()> {
-        let Some(data) = metadata.get("data") else {
-            warn!("Failed to get metadata from {metadata:#}");
-            warn!("Not updating metadata");
-            return Ok(());
-        };
+    #[instrument(level = "debug")]
+    pub async fn update_metadata<P: AsRef<Path> + std::fmt::Debug>(
+        &mut self,
+        filename: P,
+    ) -> Result<()> {
+        let filename = filename.as_ref();
+        debug!("Finding metadata for {}", filename.display());
+        let tag = Tag::read_from_path(Path::new(&CONFIG.general.music_dir).join(filename))?;
 
-        let Some(data) = data.as_object() else {
-            warn!("Could not convert {data:#} to json");
-            warn!("Not updating metadata");
-            return Ok(());
-        };
+        self.title = tag.title().unwrap_or("<Unknown title>").to_owned();
+        self.artist = tag
+            .artist()
+            .unwrap_or("<Unknown artist>")
+            .split('\0')
+            .collect::<Vec<_>>()
+            .join(", ");
 
-        let data: serde_json::Map<String, Value> = data
-            .iter()
-            .map(|(k, v)| (k.to_lowercase(), v.clone()))
-            .collect();
+        self.album = tag.album().unwrap_or("<Unknown album>").to_owned();
+        self.date = tag
+            .date_released()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| {
+                tag.date_recorded()
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| "<Unknown release date>".to_owned())
+            });
 
+        self.arturl = tag
+            .frames()
+            .find_map(|f| match f.content() {
+                | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
+                | Content::ExtendedText(t) if t.description == "arturl" => {
+                    Some(strip_null(&t.value))
+                },
+                | _ => {
+                    warn!("Couldn't find album art url for {}", filename.display());
+                    None
+                },
+            })
+            .unwrap_or_else(|| CONFIG.discord.fallback_art.clone());
+        debug!("Found metadata");
+
+        debug!("Attempting to find duration");
         // duration is not technically metadata but i count it as such
         let mut duration = None;
-        for a in 0..=7 {
+        for a in 0..u16::MAX {
             duration = send_command(r#"{"command": ["get_property", "duration"]}"#)
                 .await?
                 .get("data")
@@ -107,36 +138,11 @@ impl Track {
         }
 
         let Some(dur) = duration else {
-            warn!("Failed to fetch duration");
+            error!("Failed to fetch duration after {} attempts", u16::MAX);
             warn!("Not updating metadata");
             return Ok(());
         };
 
-        self.title = data
-            .get("title")
-            .and_then(|v| v.as_str())
-            .unwrap_or("<Unknown title>")
-            .to_string();
-        self.artist = data
-            .get("artist")
-            .and_then(|v| v.as_str())
-            .unwrap_or("<Unknown artist>")
-            .to_string();
-        self.album = data
-            .get("album")
-            .and_then(|v| v.as_str())
-            .unwrap_or("<Unknown album>")
-            .to_string();
-        self.date = data
-            .get("date")
-            .and_then(|v| v.as_str())
-            .unwrap_or("<Unknown release date>")
-            .to_string();
-        self.arturl = data
-            .get("arturl")
-            .and_then(|v| v.as_str())
-            .unwrap_or(&CONFIG.discord.fallback_art)
-            .to_string();
         self.duration = dur;
 
         Ok(())

@@ -75,7 +75,6 @@ pub async fn connect() -> Result<()> {
         r#"{"command": ["observe_property", 3, "loop-file"]}"#,
         r#"{"command": ["observe_property", 4, "mute"]}"#,
         r#"{"command": ["observe_property", 5, "playback-time"]}"#,
-        r#"{"command": ["observe_property", 6, "metadata"]}"#,
         r#"{"command": ["observe_property", 7, "volume"]}"#,
     ];
 
@@ -194,8 +193,18 @@ async fn handle_properties(json: Value) {
     if let Some(property) = json.get("name").and_then(|v| v.as_str()) {
         match property {
             | "filename" => {
-                debug!("MPV Property: Filename changed");
+                info!("MPV Property: Filename changed");
                 debug!("Filename property: {json:#}");
+                if let Some(filename) = json.get("data").and_then(|v| v.as_str()) {
+                    let mut track = TRACK.lock().await;
+                    if let Err(e) = track.update_metadata(filename).await {
+                        error!("Failed to update metadata: {e:#?}")
+                    }
+                    info!("Now playing '{track}'");
+                    if CONFIG.discord.used {
+                        track.rpc().await;
+                    }
+                }
             },
             | "pause" => {
                 info!("MPV Property: Pause toggled");
@@ -290,19 +299,6 @@ async fn handle_properties(json: Value) {
                     }
                 }
             },
-            | "metadata" => {
-                debug!("MPV Property: Metadata changed");
-                debug!("Metadata property: {json:#}");
-
-                let mut track = TRACK.lock().await;
-                if let Err(e) = track.update_metadata(&json).await {
-                    error!("Failed to update metadata: {e:#?}")
-                }
-                info!("Now playing '{track}'");
-                if CONFIG.discord.used {
-                    track.rpc().await;
-                }
-            },
             | _ => {
                 warn!("MPV Property: Received unrecognized property:\n{json:#}")
             },
@@ -314,7 +310,7 @@ async fn handle_properties(json: Value) {
 pub async fn launch() {
     info!("Launching mpv...");
     let to_shuffle: &str = if CONFIG.general.shuffle { "yes" } else { "no" };
-    Command::new("mpv")
+    let pid = Command::new("mpv")
         .arg(format!("--shuffle={to_shuffle}"))
         .arg("--really-quiet")
         .arg("--geometry=350x350+1400+80")
@@ -323,7 +319,13 @@ pub async fn launch() {
         .arg(format!("--input-ipc-server={SOCK_PATH}"))
         .args(prequeue())
         .spawn()
-        .expect("Failed to launch mpv");
+        .expect("Failed to launch mpv")
+        .id();
+
+    // Record tuun-mpv's pid, but don't whine if something goes wrong
+    if let Some(i) = pid {
+        let _ = fs::write("/tmp/tuun/tuun-mpv.pid", i.to_string());
+    };
 
     for a in 1..=32 {
         sleep(Duration::from_millis(128)).await;
