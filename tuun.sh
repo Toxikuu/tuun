@@ -10,10 +10,11 @@ cleanup() {
     rm -f "/tmp/tuun/tuun.lock"
     pkill -x tuun
     pkill -x tuunfm
+    [ -r "/tmp/tuun/tuun-mpv.pid" ] && kill "$(cat /tmp/tuun/tuun-mpv.pid)"
     tput cvvis
 }
 
-trap cleanup EXIT
+trap cleanup EXIT TERM
 
 tput civis
 
