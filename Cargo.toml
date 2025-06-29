@@ -13,6 +13,11 @@ keywords = [
     "player",
 ]
 
+[profile.release]
+opt-level = 3
+strip = "symbols"
+lto = "thin"
+
 [dependencies]
 anyhow = "1.0.96"
 discord-rich-presence = { git = "https://github.com/vionya/discord-rich-presence.git" }
