@@ -2,6 +2,8 @@
 
 TODO
 
+    Add a dist.sh script to create a binary dist tarball
+
     Add configure, Makefile prefix should default to /usr/local
 
     Vendor rustfm_scrobble
