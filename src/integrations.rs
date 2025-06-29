@@ -40,8 +40,8 @@ use crate::{
         LastFM,
         Track,
     },
-    traits::Permit,
 };
+use permitit::Permit;
 
 #[instrument]
 pub async fn authenticate_lastfm_scrobbler() -> Result<()> {

@@ -30,14 +30,13 @@ use tracing_subscriber::{
     EnvFilter,
     fmt,
 };
-use traits::Permit;
+use permitit::Permit;
 
 mod config;
 mod integrations;
 mod mpv;
 mod playlists;
 mod structs;
-mod traits;
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);
 pub static RPC_CLIENT: LazyLock<Mutex<DiscordIpcClient>> =
