@@ -156,7 +156,7 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
 }
 
 #[instrument]
-fn create_rpc_payload(track: &Track) -> Activity {
+fn create_rpc_payload(track: &Track) -> Activity<'_> {
     let assets = activity::Assets::new()
         .large_image(&track.arturl)
         .large_text(&track.album)
