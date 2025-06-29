@@ -34,7 +34,8 @@ in `./scripts`.
 Thanks to mpv's socket, you can make hotkeys to control pretty much every aspect
 of tuun, which you can pair with `./scripts/mpv.sh`. `./scripts/quu.sh` works
 with `./scripts/fzm` to make queueing songs nicer. `./scripts/tuun.sh` wraps
-launching and closing `tuun`.
+launching and closing `tuun`. Note that `./scripts/mpv.sh` is not installed by
+the Makefile. That one's up to you to place where you'd like and configure.
 
 You may also want to make keybinds and window class/title configurations for
 `tuun` and `quu` with your window manager.
