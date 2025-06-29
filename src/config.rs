@@ -31,7 +31,6 @@ pub struct Config {
     pub discord: DiscordConfig,
     pub general: GeneralConfig,
     pub color:   ColorConfig,
-    pub tuunfm:  TuunFMConfig,
 }
 
 impl Default for LastFMConfig {
@@ -112,22 +111,6 @@ pub struct GeneralConfig {
     pub playlist:      String,
     pub music_dir:     String,
     pub recent_length: usize,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(default)]
-pub struct TuunFMConfig {
-    pub used: bool,
-    pub link: String,
-}
-
-impl Default for TuunFMConfig {
-    fn default() -> Self {
-        Self {
-            used: false,
-            link: "http://127.0.0.1:8080".to_owned(),
-        }
-    }
 }
 
 impl Config {

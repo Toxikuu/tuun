@@ -35,8 +35,3 @@ music_dir = "~/Music"
 playlist = "~/Music/Playlists/new.tpl"
 # how many songs the /tmp/tuun/recent.tpl should consist of
 recent_length = 200
-
-# tuunfm is currently not supported
-[tuunfm]
-used = false
-link = "http://127.0.0.1:8080"

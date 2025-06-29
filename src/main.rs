@@ -54,9 +54,8 @@ pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(N
 ///     5. Generate playlists
 ///     6. Optionally connect to Discord
 ///     7. Optionally authenticate with LastFM
-///     8. Optionally launch TuunFM
-///     9. Launch MPV
-///     10. Block forever
+///     8. Launch MPV
+///     9. Block forever
 #[tokio::main]
 async fn main() -> ! {
     // Initialize logging
@@ -116,12 +115,6 @@ async fn main() -> ! {
                 info!("Authenticated with lastfm");
             }
         });
-    }
-
-    // Launch tuunfm if it's used
-    if CONFIG.tuunfm.used {
-        start_process("tuunfm").await;
-        info!("Started tuunfm");
     }
 
     // Launch mpv
