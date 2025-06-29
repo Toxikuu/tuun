@@ -17,6 +17,7 @@ use config::Config;
 use discord_rich_presence::DiscordIpcClient;
 use integrations::connect_discord_rpc_client;
 use once_cell::sync::Lazy;
+use permitit::Permit;
 use rustfm_scrobble::Scrobbler;
 use tokio::sync::Mutex;
 use tracing::{
@@ -30,7 +31,6 @@ use tracing_subscriber::{
     EnvFilter,
     fmt,
 };
-use permitit::Permit;
 
 mod config;
 mod integrations;

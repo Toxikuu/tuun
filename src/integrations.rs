@@ -19,6 +19,7 @@ use discord_rich_presence::{
     },
     error::Error as DrpErr,
 };
+use permitit::Permit;
 use rustfm_scrobble::{
     Scrobble,
     Scrobbler,
@@ -41,7 +42,6 @@ use crate::{
         Track,
     },
 };
-use permitit::Permit;
 
 #[instrument]
 pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
