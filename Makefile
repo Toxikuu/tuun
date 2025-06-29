@@ -15,4 +15,4 @@ install:
 
 uninstall:
 	rm -rf $(DESTDIR)/usr/share/tuun   $(DESTDIR)/tmp/tuun
-	rm -f  $(DESTDIR)/usr/libexec/tuun $(DESTDIR)/usr/bin/tuun $(DESTDIR)/usr/bin/quu
+	rm -f  $(DESTDIR)/usr/libexec/tuun $(DESTDIR)/usr/bin/tuun $(DESTDIR)/usr/bin/quu $(DESTDIR)/usr/bin/fzm
