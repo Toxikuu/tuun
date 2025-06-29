@@ -1,3 +1,7 @@
+## 4.1.1
+- Add release profile
+- Address a cargo warning
+
 ## 4.1.0
 - Drop unimplemented tuunfm support
 - Rework scripts
