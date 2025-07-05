@@ -9,7 +9,7 @@ fi
 cleanup() {
     rm -f "/tmp/tuun/quu.tpl"
     rm -f "/tmp/tuun/tuun.lock"
-    pkill -x tuun
+    pkill -f /usr/libexec/tuun
     [ -r "/tmp/tuun/tuun-mpv.pid" ] && kill "$(cat /tmp/tuun/tuun-mpv.pid)"
     tput cvvis
 }
@@ -24,4 +24,5 @@ if ! [[ -e /usr/libexec/tuun ]]; then
     exit 1
 fi
 
-TUUN_LOG_LEVEL="${TUUN_LOG_LEVEL:-debug}" /usr/libexec/tuun "$@"
+TUUN_LOG_LEVEL="${TUUN_LOG_LEVEL:-debug}" /usr/libexec/tuun "$@" &
+wait $!
