@@ -1,3 +1,7 @@
+## 4.1.3
+- Escape double quotes in quu
+- Update dependencies
+
 ## 4.1.2
 - Attempt to fix a bug with tuun.sh
 - Update dependencies
