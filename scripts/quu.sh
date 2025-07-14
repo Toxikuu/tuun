@@ -23,9 +23,11 @@ SEL="$(find "$SONG_DIR" -maxdepth 1 -mindepth 1 -type f \( -iname '*.mp3' -o -in
 # Write them to the queue, and apply some fixes:
 # 1. Prepend the song directory
 # 2. Change \ to \\ to appease mpv
+# 3. Change " to \" to appease mpv
 printf "%s\n" "${SEL[@]}"       |
     sed -e "s,^,$SONG_DIR/,"    \
         -e 's,\\,\\\\,g'        \
+        -e 's,",\\",g'          \
         > /tmp/tuun/quu.tpl
 
 # Start tuun if it isn't running
