@@ -38,7 +38,7 @@ mod structs;
 pub static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);
 pub static RPC_CLIENT: LazyLock<Mutex<DiscordIpcClient>> =
     LazyLock::new(|| Mutex::new(DiscordIpcClient::new(&CONFIG.discord.client_id)));
-pub static SCROBBLER: Lazy<Mutex<Option<Scrobbler>>> = Lazy::new(|| Mutex::new(None));
+pub static SCROBBLER: Lazy<Mutex<Option<Arc<Scrobbler>>>> = Lazy::new(|| Mutex::new(None));
 
 /// # Description
 /// Main loop (should never return)

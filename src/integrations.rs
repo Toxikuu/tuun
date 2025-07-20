@@ -1,5 +1,6 @@
 use std::{
     path::Path,
+    sync::Arc,
     time::{
         Duration,
         SystemTime,
@@ -45,7 +46,7 @@ use crate::{
 
 #[instrument]
 pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
-    let mut scrobbler_lock = crate::SCROBBLER.lock().await;
+    let mut scrobbler_lock = SCROBBLER.lock().await;
 
     if scrobbler_lock.is_none() {
         info!("Authenticating lastfm scrobbler...");
@@ -63,7 +64,7 @@ pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
         let mut scrobbler = Scrobbler::new(lfm.apikey, lfm.secret);
         scrobbler.authenticate_with_password(lfm.username, lfm.password)?;
 
-        *scrobbler_lock = Some(scrobbler);
+        *scrobbler_lock = Some(Arc::new(scrobbler));
         info!("Authenticated lastfm scrobbler");
     } else {
         debug!("Not authenticating as scrobbler_lock is Some")
@@ -82,10 +83,12 @@ pub async fn lastfm_now_playing(track: Track) -> Result<()> {
     };
 
     let track = Scrobble::new(&track.artist, &track.title, &track.album);
+    let scrobbler = Arc::clone(scrobbler);
 
-    scrobbler.now_playing(&track)?;
-    debug!("Set LastFM now playing to {track:#?}");
+    tokio::task::spawn_blocking(move || scrobbler.now_playing(&track))
+        .await??;
 
+    debug!("Set now playing");
     Ok(())
 }
 
@@ -99,10 +102,12 @@ pub async fn lastfm_scrobble(track: Track) -> Result<()> {
     };
 
     let track = Scrobble::new(&track.artist, &track.title, &track.album);
+    let scrobbler = Arc::clone(scrobbler);
 
-    scrobbler.scrobble(&track)?;
-    debug!("Scrobbled {track:#?}");
+    tokio::task::spawn_blocking(move || scrobbler.scrobble(&track))
+        .await??;
 
+    debug!("Scrobbled");
     Ok(())
 }
 
