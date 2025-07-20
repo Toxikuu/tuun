@@ -6,11 +6,10 @@ use std::{
     io::ErrorKind as IOE,
     path::PathBuf,
     process::{
-        Command,
-        Stdio,
         exit,
     },
     sync::LazyLock,
+    sync::Arc,
 };
 
 use config::Config;
@@ -21,10 +20,8 @@ use permitit::Permit;
 use rustfm_scrobble::Scrobbler;
 use tokio::sync::Mutex;
 use tracing::{
-    debug,
     error,
     info,
-    warn,
 };
 use tracing_appender::rolling;
 use tracing_subscriber::{
@@ -129,32 +126,5 @@ async fn main() -> ! {
     // Hang out forever
     loop {
         std::thread::park();
-    }
-}
-
-/// Utility function to check if a process is running
-/// Returns false on failures
-fn is_process_running(process: &str) -> bool {
-    let running = Command::new("pgrep")
-        .args(["-x", process])
-        .stdout(Stdio::null())
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false);
-    debug!(process, running, "Checked if process is running");
-    running
-}
-
-/// Utility function to start a process
-/// Won't start the process if it's already running
-async fn start_process(process: &str) {
-    if !is_process_running(process) {
-        if let Err(e) = Command::new(process).spawn() {
-            error!("Failed to start {process}: {e}");
-        } else {
-            info!("Started {process}");
-        }
-    } else {
-        warn!("{process} is already running")
     }
 }

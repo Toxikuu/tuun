@@ -128,34 +128,6 @@ pub async fn send_command(command: &str) -> Result<Value> {
     Ok(json)
 }
 
-#[instrument(level = "debug")]
-pub fn send_command_blocking(command: &str) -> Result<Value> {
-    use std::{
-        io::{
-            BufRead,
-            BufReader,
-            Write,
-        },
-        os::unix::net::UnixStream,
-    };
-
-    let mut stream = UnixStream::connect(SOCK_PATH)?;
-
-    stream.write_all(command.as_bytes())?;
-    stream.write_all(b"\n")?;
-    stream.flush()?;
-    debug!("Sending blocking mpv command: {command:#}");
-
-    let mut reader = BufReader::new(stream);
-    let mut response = String::new();
-    reader.read_line(&mut response)?;
-
-    let json: Value = serde_json::from_str(&response)?;
-    debug!("Received blocking mpv command response: {json:#}");
-
-    Ok(json)
-}
-
 /// # Description
 /// Handles MPV events.
 /// Supported events include start-file, end-file, and property-change.
