@@ -1,3 +1,7 @@
+## 4.2.0
+- Improve handling of blocking scrobble tasks
+- Update dependencies
+
 ## 4.1.3
 - Escape double quotes in quu
 - Update dependencies
