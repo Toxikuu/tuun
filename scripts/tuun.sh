@@ -1,9 +1,15 @@
 #!/bin/bash
 
+
+# https://github.com/Toxikuu/tuun/issues/2
 if [[ -e "/tmp/tuun/tuun.lock" ]]; then
-    echo "tuun is already running" >&2
-    echo "If you're sure it's not, you can try removing /tmp/tuun/tuun.lock" >&2
-    exit 1
+    if pidof /usr/libexec/tuun; then
+        echo "It looks like tuun is already running" >&2
+        echo "If you're sure it's not, you can try removing /tmp/tuun/tuun.lock" >&2
+        exit 1
+    fi
+
+    rm -vf /tmp/tuun/tuun.lock
 fi
 
 cleanup() {
