@@ -17,6 +17,8 @@ used = true
 client_id = "1272345557276295310"
 # an image url
 fallback_art = "https://files.catbox.moe/rdwkcx.png"
+# timeout in milliseconds for connecting to discord's ipc socket
+timeout = 100
 
 # hex code
 # 6-char and 3-char are supported

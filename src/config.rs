@@ -63,6 +63,7 @@ impl Default for DiscordConfig {
             used:         true,
             client_id:    "1272345557276295310".to_owned(),
             fallback_art: "https://w7.pngwing.com/pngs/387/453/png-transparent-phonograph-record-lp-record-45-rpm-album-concerts-miscellaneous-photography-sound-thumbnail.png".to_owned(),
+            timeout:      100,
         }
     }
 }
@@ -73,6 +74,8 @@ pub struct DiscordConfig {
     pub used:         bool,
     pub client_id:    String,
     pub fallback_art: String,
+    /// Timeout in milliseconds for discord ipc socket connections
+    pub timeout:      u64,
 }
 
 impl Default for GeneralConfig {
@@ -115,6 +118,7 @@ pub struct GeneralConfig {
 
 impl Config {
     pub fn load() -> Self {
+        // TODO: Consider using home_dir instead
         let home_dir = PathBuf::from(
             env::var("HOME").expect("Couldn't find home directory ($HOME is not set)"),
         );
