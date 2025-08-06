@@ -75,6 +75,7 @@ pub async fn connect() -> Result<()> {
         r#"{"command": ["observe_property", 3, "loop-file"]}"#,
         r#"{"command": ["observe_property", 4, "mute"]}"#,
         r#"{"command": ["observe_property", 5, "playback-time"]}"#,
+        r#"{"command": ["observe_property", 6, "metadata"]}"#,
         r#"{"command": ["observe_property", 7, "volume"]}"#,
     ];
 
@@ -167,16 +168,6 @@ async fn handle_properties(json: Value) {
             | "filename" => {
                 info!("MPV Property: Filename changed");
                 debug!("Filename property: {json:#}");
-                if let Some(filename) = json.get("data").and_then(|v| v.as_str()) {
-                    let mut track = TRACK.lock().await;
-                    if let Err(e) = track.update_metadata(filename).await {
-                        error!("Failed to update metadata: {e:#?}")
-                    }
-                    info!("Now playing '{track}'");
-                    if CONFIG.discord.used {
-                        track.rpc().await;
-                    }
-                }
             },
             | "pause" => {
                 info!("MPV Property: Pause toggled");
@@ -185,6 +176,20 @@ async fn handle_properties(json: Value) {
                     PAUSED.store(paused, Ordering::Relaxed);
                 };
                 debug!("PAUSED set to {}", PAUSED.load(Ordering::Relaxed));
+            },
+            | "metadata" => {
+                info!("MPV Property: Metadata changed");
+                debug!("Metadata property: {json:#}");
+
+                let mut track = TRACK.lock().await;
+                if let Err(e) = track.update_metadata(&json).await {
+                    error!("Failed to update metadata: {e:#?}")
+                }
+
+                info!("Now playing '{track}'");
+                if CONFIG.discord.used {
+                    track.rpc().await;
+                }
             },
             | "loop-file" => {
                 info!("MPV Property: Loop toggled");
