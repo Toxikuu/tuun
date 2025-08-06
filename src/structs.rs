@@ -5,7 +5,6 @@ use std::{
     }, path::PathBuf, sync::atomic::Ordering
 };
 
-use std::path::Path;
 use id3::{Tag, Content};
 use anyhow::{bail, Context, Result};
 use serde_json::Value;
