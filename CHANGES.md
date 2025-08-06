@@ -1,3 +1,8 @@
+## 5.0.0
+- Partially revert to the old way of acquiring metadata
+- Improve file format support
+- Fix #2
+
 ## 4.2.0
 - Improve handling of blocking scrobble tasks
 - Update dependencies
