@@ -1,3 +1,10 @@
+## 5.1.0
+- Improve discord ipc detection
+- Improve latency surrounding discord rich presence
+- Improve arturl detection for correctly-tagged mp3s
+- Update dependencies
+- Miscellaneous cleanup
+
 ## 5.0.0
 - Partially revert to the old way of acquiring metadata
 - Improve file format support
