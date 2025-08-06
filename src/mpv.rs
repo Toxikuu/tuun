@@ -291,7 +291,7 @@ pub async fn launch() {
         .arg(format!("--shuffle={to_shuffle}"))
         .arg("--really-quiet")
         .arg("--geometry=350x350+1400+80")
-        .arg("--title='tuun-mpv'")
+        .arg("--title=tuun-mpv")
         .arg("--loop-playlist=inf")
         .arg(format!("--input-ipc-server={SOCK_PATH}"))
         .args(prequeue())
