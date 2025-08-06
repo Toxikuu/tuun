@@ -2,6 +2,11 @@
 
 TODO
 
+    Maybe make discord IPC wait till 5 seconds into a song if you skip more than
+    like 3 songs in a row because it currently plays catch up lol
+
+    Write a function to attempt to refresh the discord IPC connection on fails
+
     Add a dist.sh script to create a binary dist tarball
 
     Add configure, Makefile prefix should default to /usr/local
