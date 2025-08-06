@@ -1,19 +1,14 @@
 use std::{
-    fmt,
-    io::{
+    fmt, io::{
         self,
         Write,
-    },
-    path::Path,
-    sync::atomic::Ordering,
+    }, path::PathBuf, sync::atomic::Ordering
 };
 
-use anyhow::Result;
-use id3::{
-    Content,
-    Tag,
-    TagLike,
-};
+use std::path::Path;
+use id3::{Tag, Content};
+use anyhow::{bail, Context, Result};
+use serde_json::Value;
 use tracing::{
     debug,
     error,
@@ -33,8 +28,6 @@ use crate::{
         send_command,
     },
 };
-
-pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
 
 #[derive(Debug, Clone)]
 pub struct Track {
@@ -80,48 +73,78 @@ impl LastFM<'_> {
     }
 }
 
+pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
+
 impl Track {
-    #[instrument(level = "debug")]
-    pub async fn update_metadata<P: AsRef<Path> + std::fmt::Debug>(
-        &mut self,
-        filename: P,
-    ) -> Result<()> {
-        let filename = filename.as_ref();
-        debug!("Finding metadata for {}", filename.display());
-        let tag = Tag::read_from_path(Path::new(&CONFIG.general.music_dir).join(filename))?;
+    pub async fn query_metadata(&self) -> Result<Value> {
+        let command = r#" { "command" : [ "get_property", "metadata" ] "#;
+        send_command(command).await
+    }
 
-        self.title = tag.title().unwrap_or("<Unknown title>").to_owned();
-        self.artist = tag
-            .artist()
-            .unwrap_or("<Unknown artist>")
-            .split('\0')
-            .collect::<Vec<_>>()
-            .join(", ");
+    pub async fn query_filename(&self) -> Result<PathBuf> {
+        let command = r#" { "command" : [ "get_property", "filename" ] "#;
+        let Ok(data) = send_command(command).await else {
+            warn!("Failed to query filename");
+            bail!("Failed to query filename");
+        };
 
-        self.album = tag.album().unwrap_or("<Unknown album>").to_owned();
-        self.date = tag
-            .date_released()
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| {
-                tag.date_recorded()
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| "<Unknown release date>".to_owned())
-            });
+        let Some(data) = data.as_object() else {
+            warn!("MPV returned invalid JSON");
+            bail!("Invalid JSON");
+        };
 
-        self.arturl = tag
-            .frames()
+        let filename = data.get("value").context("Filename not present")?.to_string();
+        Ok(PathBuf::from(filename))
+    }
+
+    pub async fn get_arturl(&self, data: &serde_json::Map<String, Value>) -> Option<String> {
+        if let Some(url) = data.get("arturl").and_then(|v| v.as_str()) {
+            return Some(url.to_string())
+        }
+
+        // TODO: See if I can get the full filepath from MPV instead of just the filename
+        let filename = self.query_filename().await.ok()?;
+        let tag = Tag::read_from_path(Path::new(&CONFIG.general.music_dir).join(filename)).ok()?;
+
+        return tag.frames()
             .find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "arturl" => {
-                    Some(strip_null(&t.value))
-                },
-                | _ => {
-                    warn!("Couldn't find album art url for {}", filename.display());
-                    None
-                },
+                | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
+                | _ => None
             })
-            .unwrap_or_else(|| CONFIG.discord.fallback_art.clone());
-        debug!("Found metadata");
+    }
+
+    #[instrument(level = "debug")]
+    pub async fn update_metadata(
+        &mut self,
+        metadata: &Value,
+    ) -> Result<()> {
+        let Some(data) = metadata.get("data").and_then(|d| d.as_object()) else {
+            warn!("Failed to get metadata from {metadata:#}");
+            warn!("Not updating metadata");
+            return Ok(())
+        };
+
+        let data: serde_json::Map<String, Value> = data
+            .iter()
+            .map(|(k, v)| (k.to_lowercase(), v.clone()))
+            .collect();
+
+        self.title = data.get("title").and_then(|v| v.as_str())
+            .unwrap_or("<Unknown title>")
+            .to_string();
+        self.artist = data.get("artist").and_then(|v| v.as_str())
+            .unwrap_or("<Unknown artist>")
+            .to_string();
+        self.album = data.get("album").and_then(|v| v.as_str())
+            .unwrap_or("<Unknown album>")
+            .to_string();
+        self.date = data.get("date").and_then(|v| v.as_str())
+            .unwrap_or("<Unknown date>")
+            .to_string();
+
+        self.arturl = self.get_arturl(&data).await
+            .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string());
 
         debug!("Attempting to find duration");
         // duration is not technically metadata but i count it as such
