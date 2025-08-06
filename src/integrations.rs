@@ -1,5 +1,4 @@
 use std::{
-    path::Path,
     sync::Arc,
     time::{
         Duration,
@@ -118,11 +117,15 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
         return Ok(());
     }
 
-    let socketpath = Path::new("/run/user/1000/discord-ipc-0");
-    if !socketpath.exists() {
-        warn!("Discord IPC {socketpath:?} does not exist");
-        return Ok(());
-    } // don't complain when discord is closed
+    // TODO: Maybe see if there's a better way of doing this check. For now this is addressed by
+    // just lowering the socket connection timeout enough to where the block (which genuinely how
+    // is it blocking while on another thread wtf) is not really noticeable.
+    //
+    // let socketpath = Path::new("/run/user/1000/discord-ipc-0");
+    // if !socketpath.exists() {
+    //     warn!("Discord IPC {socketpath:?} does not exist");
+    //     return Ok(());
+    // } // don't complain when discord is closed
 
     if track.is_default() {
         debug!("Cowardly refusing to set rich presence to a default track");
@@ -143,9 +146,9 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
         debug!("Setting Discord RPC for {track:#?}");
 
         if let Err(e) = client.set_activity(payload) {
+            drop(client);
             error!("Failed to set activity: {e}");
 
-            drop(client);
             connect_discord_rpc_client().await;
             client = RPC_CLIENT.lock().await;
 
@@ -190,7 +193,8 @@ fn create_rpc_payload(track: &Track) -> Activity<'_> {
 pub async fn connect_discord_rpc_client() {
     debug!("Attempting to connect Discord RPC client");
 
-    let lock = timeout(Duration::from_secs(4), RPC_CLIENT.lock()).await;
+    let time = Duration::from_millis(CONFIG.discord.timeout);
+    let lock = timeout(time, RPC_CLIENT.lock()).await;
 
     let Ok(mut client) = lock else {
         error!("Timed out while trying to acquire lock");
