@@ -76,16 +76,18 @@ impl LastFM<'_> {
 pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
 
 impl Track {
+    // TODO: See if this should be used anywhere
+    #[allow(unused)]
     pub async fn query_metadata(&self) -> Result<Value> {
         let command = r#" { "command" : [ "get_property", "metadata" ] "#;
         send_command(command).await
     }
 
-    pub async fn query_filename(&self) -> Result<PathBuf> {
-        let command = r#" { "command" : [ "get_property", "filename" ] "#;
+    pub async fn query_filepath(&self) -> Result<PathBuf> {
+        let command = r#" { "command" : [ "get_property", "path" ] } "#;
         let Ok(data) = send_command(command).await else {
-            warn!("Failed to query filename");
-            bail!("Failed to query filename");
+            warn!("Failed to query path");
+            bail!("Failed to query path");
         };
 
         let Some(data) = data.as_object() else {
@@ -93,25 +95,44 @@ impl Track {
             bail!("Invalid JSON");
         };
 
-        let filename = data.get("value").context("Filename not present")?.to_string();
+        let filename = data.get("data").and_then(|v| v.as_str()).context("Filename not present")?;
         Ok(PathBuf::from(filename))
     }
 
+    #[instrument(skip(self, data))]
     pub async fn get_arturl(&self, data: &serde_json::Map<String, Value>) -> Option<String> {
         if let Some(url) = data.get("arturl").and_then(|v| v.as_str()) {
+            debug!("Using key 'arturl' from mpv's metadata");
             return Some(url.to_string())
         }
 
-        // TODO: See if I can get the full filepath from MPV instead of just the filename
-        let filename = self.query_filename().await.ok()?;
-        let tag = Tag::read_from_path(Path::new(&CONFIG.general.music_dir).join(filename)).ok()?;
+        let filepath = match self.query_filepath().await {
+            Ok(f) => f,
+            Err(e) => {
+                error!("Couldn't get filepath: {e}");
+                return None
+            }
+        };
 
-        return tag.frames()
+        let tag = match Tag::read_from_path(&filepath) {
+            Ok(t) => t,
+            Err(e) => {
+                error!("Couldn't read tag from path '{}': {e}", filepath.display());
+                return None
+            }
+        };
+
+        let arturl = tag.frames()
             .find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
                 | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
-                | _ => None
-            })
+                | _ => {
+                    warn!("Couldn't find arturl in extended text or cover in extended link frames");
+                    debug!("Frames: {f:#?}");
+                    None
+                }
+            });
+        return arturl
     }
 
     #[instrument(level = "debug")]
