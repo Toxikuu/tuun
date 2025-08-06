@@ -185,7 +185,7 @@ checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
 [[package]]
 name = "discord-rich-presence"
 version = "0.2.5"
-source = "git+https://github.com/vionya/discord-rich-presence.git#9c6cabe04a70cfcc822affd1bf8be51321f8a821"
+source = "git+https://github.com/vionya/discord-rich-presence.git?rev=0224adc04b711c8f186a0fa573d5424765923e49#0224adc04b711c8f186a0fa573d5424765923e49"
 dependencies = [
  "log",
  "serde",
