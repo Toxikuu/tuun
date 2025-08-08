@@ -46,7 +46,7 @@ use crate::{
         lastfm_scrobble,
     },
     structs::Track,
-    args::parse_args,
+    ARGS,
 };
 
 const SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
@@ -286,9 +286,8 @@ async fn handle_properties(json: Value) {
 
 #[instrument]
 pub async fn launch() {
-    let args = parse_args();
     info!("Launching mpv...");
-    let to_shuffle: &str = if args.shuffle.unwrap_or(CONFIG.general.shuffle) { "yes" } else { "no" };
+    let to_shuffle: &str = if ARGS.shuffle.unwrap_or(CONFIG.general.shuffle) { "yes" } else { "no" };
     let pid = Command::new("mpv")
         .arg(format!("--shuffle={to_shuffle}"))
         .arg("--really-quiet")
@@ -330,9 +329,8 @@ pub async fn launch() {
 
 #[instrument]
 fn prequeue() -> Vec<String> {
-    let args = parse_args();
         
-    let playlist = &args.playlist.unwrap_or(CONFIG.general.playlist.clone());
+    let playlist = &ARGS.playlist.clone().unwrap_or(CONFIG.general.playlist.clone());
     if !PathBuf::from(playlist).exists() {
         error!("Playlist '{playlist}' does not exist");
         panic!("Playlist '{playlist}' does not exist");
