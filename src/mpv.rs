@@ -18,13 +18,16 @@ use once_cell::sync::Lazy;
 use serde_json::Value;
 use tokio::{
     io::{
-        AsyncBufReadExt, AsyncWriteExt, BufReader
+        AsyncBufReadExt,
+        AsyncWriteExt,
+        BufReader,
     },
     net::UnixStream,
     process::Command,
     sync::Mutex,
     time::{
-        sleep, Duration
+        Duration,
+        sleep,
     },
 };
 use tracing::{
@@ -37,13 +40,13 @@ use tracing::{
 };
 
 use crate::{
+    ARGS,
     CONFIG,
     integrations::{
         lastfm_now_playing,
         lastfm_scrobble,
     },
     structs::Track,
-    ARGS,
 };
 
 const SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
@@ -284,7 +287,8 @@ async fn handle_properties(json: Value) {
 #[instrument]
 pub async fn launch() {
     info!("Launching mpv...");
-    let to_shuffle: &str = if ARGS.shuffle.unwrap_or(CONFIG.general.shuffle) { "yes" } else { "no" };
+    let to_shuffle: &str =
+        if ARGS.shuffle.unwrap_or(CONFIG.general.shuffle) { "yes" } else { "no" };
 
     let mut mpv = Command::new("mpv")
         .arg(format!("--shuffle={to_shuffle}"))
@@ -312,9 +316,9 @@ pub async fn launch() {
         }
     }
 
-    if let Ok(optcode) = mpv.try_wait() &&
-        let Some(code) = optcode &&
-            !code.success()
+    if let Ok(optcode) = mpv.try_wait()
+        && let Some(code) = optcode
+        && !code.success()
     {
         error!("MPV exited with a failure");
         if ARGS.playlist.is_some() {
@@ -337,7 +341,10 @@ pub async fn launch() {
 
 #[instrument]
 fn prequeue() -> Vec<String> {
-    let playlist = &ARGS.playlist.clone().unwrap_or(CONFIG.general.playlist.clone());
+    let playlist = &ARGS
+        .playlist
+        .clone()
+        .unwrap_or(CONFIG.general.playlist.clone());
     debug!("Starting with playlist '{playlist}'");
 
     if !PathBuf::from(playlist).exists() {

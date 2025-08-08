@@ -72,7 +72,7 @@ pub fn create_recent_playlist() {
     let path = PathBuf::from("/tmp/tuun/recent.tpl");
 
     if path.exists() {
-        return
+        return;
     }
 
     debug!("Creating the recent playlist...");

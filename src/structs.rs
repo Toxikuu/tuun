@@ -1,12 +1,22 @@
 use std::{
-    fmt, io::{
+    fmt,
+    io::{
         self,
         Write,
-    }, path::PathBuf, sync::atomic::Ordering
+    },
+    path::PathBuf,
+    sync::atomic::Ordering,
 };
 
-use id3::{Tag, Content};
-use anyhow::{bail, Context, Result};
+use anyhow::{
+    Context,
+    Result,
+    bail,
+};
+use id3::{
+    Content,
+    Tag,
+};
 use serde_json::Value;
 use tracing::{
     debug,
@@ -94,7 +104,10 @@ impl Track {
             bail!("Invalid JSON");
         };
 
-        let filename = data.get("data").and_then(|v| v.as_str()).context("Filename not present")?;
+        let filename = data
+            .get("data")
+            .and_then(|v| v.as_str())
+            .context("Filename not present")?;
         Ok(PathBuf::from(filename))
     }
 
@@ -102,47 +115,43 @@ impl Track {
     pub async fn get_arturl(&self, data: &serde_json::Map<String, Value>) -> Option<String> {
         if let Some(url) = data.get("arturl").and_then(|v| v.as_str()) {
             debug!("Using key 'arturl' from mpv's metadata");
-            return Some(url.to_string())
+            return Some(url.to_string());
         }
 
         let filepath = match self.query_filepath().await {
-            Ok(f) => f,
-            Err(e) => {
+            | Ok(f) => f,
+            | Err(e) => {
                 error!("Couldn't get filepath: {e}");
-                return None
-            }
+                return None;
+            },
         };
 
         let tag = match Tag::read_from_path(&filepath) {
-            Ok(t) => t,
-            Err(e) => {
+            | Ok(t) => t,
+            | Err(e) => {
                 error!("Couldn't read tag from path '{}': {e}", filepath.display());
-                return None
-            }
+                return None;
+            },
         };
 
-        let arturl = tag.frames()
-            .find_map(|f| match f.content() {
-                | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
-                | _ => {
-                    warn!("Couldn't find arturl in extended text or cover in extended link frames");
-                    debug!("Frames: {f:#?}");
-                    None
-                }
-            });
-        return arturl
+        let arturl = tag.frames().find_map(|f| match f.content() {
+            | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
+            | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
+            | _ => {
+                warn!("Couldn't find arturl in extended text or cover in extended link frames");
+                debug!("Frames: {f:#?}");
+                None
+            },
+        });
+        return arturl;
     }
 
     #[instrument(level = "debug")]
-    pub async fn update_metadata(
-        &mut self,
-        metadata: &Value,
-    ) -> Result<()> {
+    pub async fn update_metadata(&mut self, metadata: &Value) -> Result<()> {
         let Some(data) = metadata.get("data").and_then(|d| d.as_object()) else {
             warn!("Failed to get metadata from {metadata:#}");
             warn!("Not updating metadata");
-            return Ok(())
+            return Ok(());
         };
 
         let data: serde_json::Map<String, Value> = data
@@ -150,20 +159,30 @@ impl Track {
             .map(|(k, v)| (k.to_lowercase(), v.clone()))
             .collect();
 
-        self.title = data.get("title").and_then(|v| v.as_str())
+        self.title = data
+            .get("title")
+            .and_then(|v| v.as_str())
             .unwrap_or("<Unknown title>")
             .to_string();
-        self.artist = data.get("artist").and_then(|v| v.as_str())
+        self.artist = data
+            .get("artist")
+            .and_then(|v| v.as_str())
             .unwrap_or("<Unknown artist>")
             .to_string();
-        self.album = data.get("album").and_then(|v| v.as_str())
+        self.album = data
+            .get("album")
+            .and_then(|v| v.as_str())
             .unwrap_or("<Unknown album>")
             .to_string();
-        self.date = data.get("date").and_then(|v| v.as_str())
+        self.date = data
+            .get("date")
+            .and_then(|v| v.as_str())
             .unwrap_or("<Unknown date>")
             .to_string();
 
-        self.arturl = self.get_arturl(&data).await
+        self.arturl = self
+            .get_arturl(&data)
+            .await
             .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string());
 
         debug!("Attempting to find duration");
@@ -236,7 +255,7 @@ impl Track {
         trace!("Displaying track:\n{self:#?}");
         if let Err(e) = cls() {
             warn!("Failed to cls: {e}");
-            return
+            return;
         }
 
         let out = self.format_metadata();

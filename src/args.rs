@@ -15,6 +15,4 @@ pub struct Args {
     pub playlist: Option<String>,
 }
 
-pub fn parse_args() -> Args {
-    Args::parse()
-}
+pub fn parse_args() -> Args { Args::parse() }

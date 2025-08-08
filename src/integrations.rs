@@ -84,8 +84,7 @@ pub async fn lastfm_now_playing(track: Track) -> Result<()> {
     let track = Scrobble::new(&track.artist, &track.title, &track.album);
     let scrobbler = Arc::clone(scrobbler);
 
-    tokio::task::spawn_blocking(move || scrobbler.now_playing(&track))
-        .await??;
+    tokio::task::spawn_blocking(move || scrobbler.now_playing(&track)).await??;
 
     debug!("Set now playing");
     Ok(())
@@ -103,8 +102,7 @@ pub async fn lastfm_scrobble(track: Track) -> Result<()> {
     let track = Scrobble::new(&track.artist, &track.title, &track.album);
     let scrobbler = Arc::clone(scrobbler);
 
-    tokio::task::spawn_blocking(move || scrobbler.scrobble(&track))
-        .await??;
+    tokio::task::spawn_blocking(move || scrobbler.scrobble(&track)).await??;
 
     debug!("Scrobbled");
     Ok(())
@@ -198,7 +196,7 @@ pub async fn connect_discord_rpc_client() {
 
     let Ok(mut client) = lock else {
         error!("Timed out while trying to acquire lock");
-        return
+        return;
     };
 
     // attempt reconnection is recv fails
@@ -206,17 +204,17 @@ pub async fn connect_discord_rpc_client() {
         debug!("Failed to receive. Attempting to reconnect client.");
         if let Err(e) = client.close().permit(|e| matches!(e, DrpErr::NotConnected)) {
             error!("Failed to close IPC client: {e}");
-            return
+            return;
         };
         if let Err(e) = client.connect() {
             error!("Failed to reconnect IPC client: {e}");
-            return
+            return;
         };
     }
 
     if let Err(e) = client.connect() {
         error!("Failed to connect to Discord RPC client: {e}");
-        return
+        return;
     }
 
     debug!("Connected Discord RPC client");

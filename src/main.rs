@@ -5,11 +5,11 @@ use std::{
     fs,
     io::ErrorKind as IOE,
     path::PathBuf,
-    process::{
-        exit,
+    process::exit,
+    sync::{
+        Arc,
+        LazyLock,
     },
-    sync::LazyLock,
-    sync::Arc,
 };
 
 use config::Config;
@@ -29,12 +29,12 @@ use tracing_subscriber::{
     fmt,
 };
 
+mod args;
 mod config;
 mod integrations;
 mod mpv;
 mod playlists;
 mod structs;
-mod args;
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);
 pub static ARGS: LazyLock<args::Args> = LazyLock::new(args::parse_args);
