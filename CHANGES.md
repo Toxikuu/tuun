@@ -1,3 +1,9 @@
+## 5.2.0
+- Command line arguments by @Stigstille
+- Halved polling timeout for mpv's socket
+- Marginally improve log output for mpv exits
+- Formatting changes
+
 ## 5.1.0
 - Improve discord ipc detection
 - Improve latency surrounding discord rich presence
