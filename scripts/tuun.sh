@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # https://github.com/Toxikuu/tuun/issues/2
 if [[ -e "/tmp/tuun/tuun.lock" ]]; then
     if pidof /usr/libexec/tuun; then
@@ -15,8 +14,9 @@ fi
 cleanup() {
     rm -f "/tmp/tuun/quu.tpl"
     rm -f "/tmp/tuun/tuun.lock"
-    pkill -f /usr/libexec/tuun
-    [ -r "/tmp/tuun/tuun-mpv.pid" ] && kill "$(cat /tmp/tuun/tuun-mpv.pid)"
+    pkill -f /usr/libexec/tuun &>/dev/null
+    [ -r "/tmp/tuun/tuun-mpv.pid" ] && kill "$(cat /tmp/tuun/tuun-mpv.pid)" &>/dev/null
+    rm -f "/tmp/tuun/tuun-mpv.pid"
     tput cvvis
 }
 
