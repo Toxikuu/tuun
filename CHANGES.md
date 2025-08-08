@@ -1,3 +1,7 @@
+## 5.2.1
+- Make mpv socket poll timeout configurable, and change the default to 96 ms
+- Update dependencies
+
 ## 5.2.0
 - Command line arguments by @Stigstille
 - Halved polling timeout for mpv's socket
