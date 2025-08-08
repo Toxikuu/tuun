@@ -38,6 +38,7 @@ use tracing::{
     trace,
     warn,
 };
+use clap::Parser;
 
 use crate::{
     CONFIG,
@@ -282,11 +283,20 @@ async fn handle_properties(json: Value) {
         }
     }
 }
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Toggle shuffling (default: from config)
+    #[arg(short, long)]
+    shuffle: Option<bool>,
+}
 
 #[instrument]
 pub async fn launch() {
+    let args = Args::parse();
     info!("Launching mpv...");
-    let to_shuffle: &str = if CONFIG.general.shuffle { "yes" } else { "no" };
+    let to_shuffle: &str =
+        if args.shuffle.unwrap_or(CONFIG.general.shuffle) { "yes" } else { "no" };
     let pid = Command::new("mpv")
         .arg(format!("--shuffle={to_shuffle}"))
         .arg("--really-quiet")

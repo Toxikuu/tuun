@@ -20,6 +20,7 @@ lto = "thin"
 
 [dependencies]
 anyhow = "1.0"
+clap = { version = "4.5.43", features = ["derive"] }
 discord-rich-presence = { git = "https://github.com/vionya/discord-rich-presence.git", rev = "0224adc04b711c8f186a0fa573d5424765923e49" }
 id3 = "1.16"
 once_cell = "1.20"
