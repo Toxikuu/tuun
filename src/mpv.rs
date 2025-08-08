@@ -18,16 +18,13 @@ use once_cell::sync::Lazy;
 use serde_json::Value;
 use tokio::{
     io::{
-        AsyncBufReadExt,
-        AsyncWriteExt,
-        BufReader,
+        AsyncBufReadExt, AsyncWriteExt, BufReader
     },
     net::UnixStream,
     process::Command,
     sync::Mutex,
     time::{
-        Duration,
-        sleep,
+        sleep, Duration
     },
 };
 use tracing::{
@@ -288,7 +285,8 @@ async fn handle_properties(json: Value) {
 pub async fn launch() {
     info!("Launching mpv...");
     let to_shuffle: &str = if ARGS.shuffle.unwrap_or(CONFIG.general.shuffle) { "yes" } else { "no" };
-    let pid = Command::new("mpv")
+
+    let mut mpv = Command::new("mpv")
         .arg(format!("--shuffle={to_shuffle}"))
         .arg("--really-quiet")
         .arg("--geometry=350x350+1400+80")
@@ -297,8 +295,8 @@ pub async fn launch() {
         .arg(format!("--input-ipc-server={SOCK_PATH}"))
         .args(prequeue())
         .spawn()
-        .expect("Failed to launch mpv")
-        .id();
+        .expect("Failed to launch mpv");
+    let pid = mpv.id();
 
     // Record tuun-mpv's pid, but don't whine if something goes wrong
     if let Some(i) = pid {
@@ -306,11 +304,21 @@ pub async fn launch() {
     };
 
     for a in 1..=32 {
-        sleep(Duration::from_millis(128)).await;
+        sleep(Duration::from_millis(64)).await;
         debug!("Polling MPV socket {a}/32...");
         if fs::metadata(SOCK_PATH).is_ok() {
             debug!("MPV socket was ok on attempt {a}");
             break;
+        }
+    }
+
+    if let Ok(optcode) = mpv.try_wait() &&
+        let Some(code) = optcode &&
+            !code.success()
+    {
+        error!("MPV exited with a failure");
+        if ARGS.playlist.is_some() {
+            error!("This is most likely caused by your playlist referencing inaccessible tracks")
         }
     }
 
@@ -329,13 +337,15 @@ pub async fn launch() {
 
 #[instrument]
 fn prequeue() -> Vec<String> {
-        
     let playlist = &ARGS.playlist.clone().unwrap_or(CONFIG.general.playlist.clone());
+    debug!("Starting with playlist '{playlist}'");
+
     if !PathBuf::from(playlist).exists() {
         error!("Playlist '{playlist}' does not exist");
         panic!("Playlist '{playlist}' does not exist");
     }
-    if QUEUE.exists() {
+
+    let args = if QUEUE.exists() {
         debug!("Queue.tpl exists");
         vec![
             format!("--playlist={}", QUEUE.display()),
@@ -343,7 +353,10 @@ fn prequeue() -> Vec<String> {
         ]
     } else {
         vec![format!("--playlist={playlist}")]
-    }
+    };
+
+    debug!("Prequeue args for mpv: {args:#?}");
+    args
 }
 
 #[instrument]
@@ -357,7 +370,6 @@ async fn queue() -> Result<bool> {
     }
 
     let songs = fs::read_to_string(queue)?;
-
     for song in songs.lines() {
         let song = song.trim();
         let command = format!(r#"{{ "command": ["loadfile", "{song}", "insert-next"] }}"#);
