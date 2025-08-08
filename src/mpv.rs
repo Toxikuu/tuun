@@ -308,7 +308,7 @@ pub async fn launch() {
     };
 
     for a in 1..=32 {
-        sleep(Duration::from_millis(64)).await;
+        sleep(Duration::from_millis(CONFIG.general.mpv_socket_poll_timeout)).await;
         debug!("Polling MPV socket {a}/32...");
         if fs::metadata(SOCK_PATH).is_ok() {
             debug!("MPV socket was ok on attempt {a}");

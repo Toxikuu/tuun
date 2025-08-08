@@ -37,3 +37,5 @@ music_dir = "~/Music"
 playlist = "~/Music/Playlists/new.tpl"
 # how many songs the /tmp/tuun/recent.tpl should consist of
 recent_length = 200
+# milliseconds to wait when polling mpv's socket on launch
+mpv_socket_poll_timeout = 96

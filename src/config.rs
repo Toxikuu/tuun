@@ -85,6 +85,7 @@ impl Default for GeneralConfig {
             playlist:      "/tmp/tuun/all.tpl".to_owned(),
             music_dir:     format!("{}/Music", std::env::var("HOME").expect("$HOME not set")),
             recent_length: 200,
+            mpv_socket_poll_timeout: 96
         }
     }
 }
@@ -114,6 +115,7 @@ pub struct GeneralConfig {
     pub playlist:      String,
     pub music_dir:     String,
     pub recent_length: usize,
+    pub mpv_socket_poll_timeout: u64,
 }
 
 impl Config {
