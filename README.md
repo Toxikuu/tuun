@@ -5,12 +5,6 @@ Tuun is my music player. Compatibility isn't really a goal, but it should work
 on most Linux distros with some finagling. This is its fifth iteration,
 featuring async!
 
-**Incomplete List of Dependencies**
-- rust      -> Build
-- mpv       -> Runtime. Used to play and control music and display album art.
-- fzf       -> Optional. Used in `./quu.sh`.
-- alacritty -> Optional. Used in `./quu.sh`.
-
 ## Features
 Tuun currently supports at least the following fun and fancy features:
 - Discord Rich Presence
@@ -21,6 +15,12 @@ Tuun currently supports at least the following fun and fancy features:
 - Configuration
 
 ## Installation
+**Incomplete List of Dependencies**
+- rust      -> Build
+- mpv       -> Runtime. Used to play and control music and display album art.
+- fzf       -> Optional. Used in `./scripts/quu.sh`.
+- alacritty -> Optional. Used in `./scripts/quu.sh`.
+
 I've decided to use Makefiles to simplify stuff. This should be all it takes:
 ```bash
 make
