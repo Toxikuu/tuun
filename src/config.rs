@@ -63,6 +63,8 @@ impl Default for DiscordConfig {
             used:         true,
             client_id:    "1272345557276295310".to_owned(),
             fallback_art: "https://w7.pngwing.com/pngs/387/453/png-transparent-phonograph-record-lp-record-45-rpm-album-concerts-miscellaneous-photography-sound-thumbnail.png".to_owned(),
+            small_image:  "pfp".to_owned(),
+            small_text:   "hiii".to_owned(),
             timeout:      100,
         }
     }
@@ -74,6 +76,8 @@ pub struct DiscordConfig {
     pub used:         bool,
     pub client_id:    String,
     pub fallback_art: String,
+    pub small_image: String,
+    pub small_text:  String,
     /// Timeout in milliseconds for discord ipc socket connections
     pub timeout:      u64,
 }

@@ -17,6 +17,9 @@ used = true
 client_id = "1272345557276295310"
 # an image url
 fallback_art = "https://files.catbox.moe/rdwkcx.png"
+# pick a custom image for the small asset (resolves #7)
+small_image = "https://cdn.discordapp.com/avatars/1073248324024537208/7be772e2bc1afd0ddf0165b4ccfe3eb8.webp"
+small_text = "hiii"
 # timeout in milliseconds for connecting to discord's ipc socket
 timeout = 100
 
