@@ -1,3 +1,8 @@
+## 5.4.0
+- Replace rustfm-scrobble with my fork of it (fixes #11)
+- Massively reduce dependency bloat and security issues as a result of the above
+- Update dependencies
+
 ## 5.3.0
 - The small image and text for Discord is now configurable by @Stigstille
 - Encode special characters in arturl by @Stigstille
