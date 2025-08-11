@@ -2,6 +2,8 @@
 
 TODO
 
+    Documentation!!!
+
     Maybe make discord IPC wait till 5 seconds into a song if you skip more than
     like 3 songs in a row because it currently plays catch up lol
 
@@ -11,12 +13,12 @@ TODO
 
     Add configure, Makefile prefix should default to /usr/local
 
-    Vendor rustfm_scrobble
-        Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
-
 WIP
 
 DONEISH
+
+    Vendor rustfm_scrobble
+        Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
 
     Outsource global hotkey management and set up a socket instead
         Just use mpv's socket
