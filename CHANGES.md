@@ -1,3 +1,7 @@
+## 5.3.0
+- The small image and text for Discord is now configurable by @Stigstille
+- Encode special characters in arturl by @Stigstille
+
 ## 5.2.1
 - Make mpv socket poll timeout configurable, and change the default to 96 ms
 - Update dependencies
