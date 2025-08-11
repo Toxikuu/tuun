@@ -37,6 +37,7 @@ use crate::{
         send_command,
     },
 };
+use urlencoding::encode;
 
 #[derive(Debug, Clone)]
 pub struct Track {
@@ -83,6 +84,20 @@ impl LastFM<'_> {
 }
 
 pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
+
+pub fn urlencode_arturl(arturl: &str) -> String {
+    let (proto, rest_of_url) = if let Some(index) = arturl.find("://") {
+        (&arturl[..index + 3], &arturl[index + 3..])
+    } else {
+        ("", arturl)
+    };
+    let encoded_rest = rest_of_url
+        .split('/')
+        .map(|part| encode(part).into_owned())
+        .collect::<Vec<_>>()
+        .join("/");
+    format!("{proto}{encoded_rest}")
+}
 
 impl Track {
     // TODO: See if this should be used anywhere
@@ -180,10 +195,10 @@ impl Track {
             .unwrap_or("<Unknown date>")
             .to_string();
 
-        self.arturl = self
+        self.arturl = urlencode_arturl(&self
             .get_arturl(&data)
             .await
-            .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string());
+            .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string()));
 
         debug!("Attempting to find duration");
         // duration is not technically metadata but i count it as such

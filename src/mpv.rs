@@ -38,7 +38,6 @@ use tracing::{
     trace,
     warn,
 };
-use urlencoding::encode;
 
 use crate::{
     ARGS,
@@ -161,20 +160,6 @@ async fn handle_events(json: Value) {
     }
 }
 
-fn urlencode_arturl(arturl: &str) -> String {
-    let (proto, rest_of_url) = if let Some(index) = arturl.find("://") {
-        (&arturl[..index + 3], &arturl[index + 3..])
-    } else {
-        ("", arturl)
-    };
-    let encoded_rest = rest_of_url
-        .split('/')
-        .map(|part| encode(part).into_owned())
-        .collect::<Vec<_>>()
-        .join("/");
-    format!("{proto}{encoded_rest}")
-}
-
 /// Handles MPV properties.
 /// Supported properties include filename, pause, loop-file, mute, and playback-time
 #[instrument(level = "trace")]
@@ -201,8 +186,6 @@ async fn handle_properties(json: Value) {
                 if let Err(e) = track.update_metadata(&json).await {
                     error!("Failed to update metadata: {e:#?}")
                 }
-
-                track.arturl = urlencode_arturl(&track.arturl);
 
                 info!("Now playing '{track}'");
                 if CONFIG.discord.used {
