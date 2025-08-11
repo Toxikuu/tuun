@@ -163,11 +163,12 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
 
 #[instrument]
 fn create_rpc_payload(track: &Track) -> Activity<'_> {
+    debug!("Encoded arturl is 'track.arturl'");
     let assets = activity::Assets::new()
         .large_image(&track.arturl)
         .large_text(&track.album)
-        .small_image("pfp")
-        .small_text("hii");
+        .small_image(&CONFIG.discord.small_image)
+        .small_text(&CONFIG.discord.small_text);
     debug!("Created rich presence activity assets");
 
     let now = SystemTime::now();
