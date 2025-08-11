@@ -17,6 +17,10 @@ used = true
 client_id = "1272345557276295310"
 # an image url
 fallback_art = "https://files.catbox.moe/rdwkcx.png"
+# an image url
+small_image = "https://cdn.discordapp.com/avatars/495603896803262507/4c3f854b1aa44e41850908d06c17bd25"
+# text displayed when hovering over the small image
+small_text = "hiii"
 # timeout in milliseconds for connecting to discord's ipc socket
 timeout = 100
 
