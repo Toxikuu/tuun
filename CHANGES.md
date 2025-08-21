@@ -1,3 +1,6 @@
+## 5.4.1
+- Update dependencies
+
 ## 5.4.0
 - Replace rustfm-scrobble with my fork of it (fixes #11)
 - Massively reduce dependency bloat and security issues as a result of the above
