@@ -982,7 +982,7 @@ dependencies = [
 
 [[package]]
 name = "tuun"
-version = "5.4.1"
+version = "5.4.2"
 dependencies = [
  "anyhow",
  "clap",
