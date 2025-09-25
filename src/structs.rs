@@ -15,7 +15,8 @@ use anyhow::{
 };
 use id3::{
     Content,
-    Tag, TagLike,
+    Tag,
+    TagLike,
 };
 use serde_json::Value;
 use tracing::{
@@ -25,6 +26,7 @@ use tracing::{
     trace,
     warn,
 };
+use urlencoding::encode;
 
 use crate::{
     CONFIG,
@@ -37,7 +39,6 @@ use crate::{
         send_command,
     },
 };
-use urlencoding::encode;
 
 #[derive(Debug, Clone)]
 pub struct Track {
@@ -86,8 +87,9 @@ impl LastFM<'_> {
 pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
 
 pub fn urlencode_arturl(arturl: &str) -> String {
-    let (proto, rest_of_url) = arturl.find("://")
-        .map_or(("", arturl), |index| (&arturl[..index + 3], &arturl[index + 3..]));
+    let (proto, rest_of_url) = arturl.find("://").map_or(("", arturl), |index| {
+        (&arturl[..index + 3], &arturl[index + 3..])
+    });
     let encoded_rest = rest_of_url
         .split('/')
         .map(|part| encode(part).into_owned())
@@ -133,7 +135,9 @@ impl Track {
         if let Some(tag) = tag {
             let arturl = tag.frames().find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
+                | Content::ExtendedText(t) if t.description == "arturl" => {
+                    Some(strip_null(&t.value))
+                },
                 | _ => {
                     warn!("Couldn't find arturl in extended text or cover in extended link frames");
                     debug!("Frames: {f:#?}");
@@ -152,8 +156,8 @@ impl Track {
         if let Some(tag) = tag {
             let artist = tag.artist();
             match artist {
-                Some(a) => return a.split('\0').collect::<Vec<_>>().join(", "),
-                None => return String::from("<Unknown artist>"),
+                | Some(a) => return a.split('\0').collect::<Vec<_>>().join(", "),
+                | None => return String::from("<Unknown artist>"),
             }
         }
 
@@ -187,7 +191,8 @@ impl Track {
 
         let tag = if let Some(f) = filepath
             && let Some(ext) = f.extension()
-            && ext.eq_ignore_ascii_case("mp3") {
+            && ext.eq_ignore_ascii_case("mp3")
+        {
             match Tag::read_from_path(&f) {
                 | Ok(t) => Some(t),
                 | Err(e) => {
@@ -195,7 +200,9 @@ impl Track {
                     None
                 },
             }
-        } else { None };
+        } else {
+            None
+        };
 
         self.title = data
             .get("title")
@@ -216,7 +223,7 @@ impl Track {
 
         self.arturl = urlencode_arturl(
             &Self::get_arturl(&data, tag.as_ref())
-            .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string())
+                .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string()),
         );
 
         debug!("Attempting to find duration");

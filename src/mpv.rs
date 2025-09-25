@@ -58,7 +58,8 @@ pub static VOLUME: AtomicU64 = AtomicU64::new(0);
 static FRESH: AtomicBool = AtomicBool::new(false);
 static NOW_PLAYING_SET: AtomicBool = AtomicBool::new(false);
 
-static TRACK: LazyLock<Arc<Mutex<Track>>> = LazyLock::new(|| Arc::new(Mutex::new(Track::default())));
+static TRACK: LazyLock<Arc<Mutex<Track>>> =
+    LazyLock::new(|| Arc::new(Mutex::new(Track::default())));
 static QUEUE: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("/tmp/tuun/quu.tpl"));
 
 pub async fn connect() -> Result<()> {
@@ -311,7 +312,10 @@ pub async fn launch() {
     }
 
     for a in 1..=32 {
-        sleep(Duration::from_millis(CONFIG.general.mpv_socket_poll_timeout)).await;
+        sleep(Duration::from_millis(
+            CONFIG.general.mpv_socket_poll_timeout,
+        ))
+        .await;
         debug!("Polling MPV socket {a}/32...");
         if fs::metadata(SOCK_PATH).is_ok() {
             debug!("MPV socket was ok on attempt {a}");

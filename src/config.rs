@@ -76,8 +76,8 @@ pub struct DiscordConfig {
     pub used:         bool,
     pub client_id:    String,
     pub fallback_art: String,
-    pub small_image: String,
-    pub small_text:  String,
+    pub small_image:  String,
+    pub small_text:   String,
     /// Timeout in milliseconds for discord ipc socket connections
     pub timeout:      u64,
 }
@@ -85,11 +85,14 @@ pub struct DiscordConfig {
 impl Default for GeneralConfig {
     fn default() -> Self {
         Self {
-            shuffle:       true,
-            playlist:      "/tmp/tuun/all.tpl".to_owned(),
-            music_dir:     format!("{}/Music", std::env::var("HOME").expect("$HOME not set")),
-            recent_length: 200,
-            mpv_socket_poll_timeout: 96
+            shuffle:                 true,
+            playlist:                "/tmp/tuun/all.tpl".to_owned(),
+            music_dir:               format!(
+                "{}/Music",
+                std::env::var("HOME").expect("$HOME not set")
+            ),
+            recent_length:           200,
+            mpv_socket_poll_timeout: 96,
         }
     }
 }
@@ -115,10 +118,10 @@ impl Default for ColorConfig {
 #[derive(Deserialize, Debug)]
 #[serde(default)]
 pub struct GeneralConfig {
-    pub shuffle:       bool,
-    pub playlist:      String,
-    pub music_dir:     String,
-    pub recent_length: usize,
+    pub shuffle:                 bool,
+    pub playlist:                String,
+    pub music_dir:               String,
+    pub recent_length:           usize,
     pub mpv_socket_poll_timeout: u64,
 }
 
