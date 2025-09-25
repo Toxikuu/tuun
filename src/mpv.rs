@@ -14,7 +14,6 @@ use std::{
 };
 
 use anyhow::Result;
-use once_cell::sync::Lazy;
 use serde_json::Value;
 use tokio::{
     io::{
@@ -59,7 +58,7 @@ pub static VOLUME: AtomicU64 = AtomicU64::new(0);
 static FRESH: AtomicBool = AtomicBool::new(false);
 static NOW_PLAYING_SET: AtomicBool = AtomicBool::new(false);
 
-static TRACK: Lazy<Arc<Mutex<Track>>> = Lazy::new(|| Arc::new(Mutex::new(Track::default())));
+static TRACK: LazyLock<Arc<Mutex<Track>>> = LazyLock::new(|| Arc::new(Mutex::new(Track::default())));
 static QUEUE: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("/tmp/tuun/quu.tpl"));
 
 pub async fn connect() -> Result<()> {
@@ -137,7 +136,7 @@ async fn handle_events(json: Value) {
     if let Some(event) = json.get("event").and_then(|v| v.as_str()) {
         match event {
             | "start-file" => {
-                debug!("MPV Event: New file started")
+                debug!("MPV Event: New file started");
             },
             | "end-file" => {
                 if let Some(reason) = json.get("reason").and_then(|v| v.as_str()) {
@@ -163,8 +162,9 @@ async fn handle_events(json: Value) {
 /// Handles MPV properties.
 /// Supported properties include filename, pause, loop-file, mute, and playback-time
 #[instrument(level = "trace")]
+#[allow(clippy::too_many_lines)]
 async fn handle_properties(json: Value) {
-    if let Some(property) = json.get("name").and_then(|v| v.as_str()) {
+    if let Some(property) = json.get("name").and_then(Value::as_str) {
         match property {
             | "filename" => {
                 info!("MPV Property: Filename changed");
@@ -173,9 +173,9 @@ async fn handle_properties(json: Value) {
             | "pause" => {
                 info!("MPV Property: Pause toggled");
                 debug!("Pause property: {json:#}");
-                if let Some(paused) = json.get("data").and_then(|v| v.as_bool()) {
+                if let Some(paused) = json.get("data").and_then(Value::as_bool) {
                     PAUSED.store(paused, Ordering::Relaxed);
-                };
+                }
                 debug!("PAUSED set to {}", PAUSED.load(Ordering::Relaxed));
             },
             | "metadata" => {
@@ -184,31 +184,33 @@ async fn handle_properties(json: Value) {
 
                 let mut track = TRACK.lock().await;
                 if let Err(e) = track.update_metadata(&json).await {
-                    error!("Failed to update metadata: {e:#?}")
+                    error!("Failed to update metadata: {e:#?}");
                 }
 
                 info!("Now playing '{track}'");
                 if CONFIG.discord.used {
                     track.rpc().await;
                 }
+                drop(track);
             },
             | "loop-file" => {
                 info!("MPV Property: Loop toggled");
                 debug!("Loop property: {json:#}");
-                if let Some(looped) = json.get("data").and_then(|v| v.as_bool()) {
+                if let Some(looped) = json.get("data").and_then(Value::as_bool) {
                     LOOPED.store(looped, Ordering::Relaxed);
-                };
+                }
                 // account for loop="inf"
-                if let Some(looped) = json.get("data").and_then(|v| v.as_str()) {
+                if let Some(looped) = json.get("data").and_then(Value::as_str) {
                     let looped = matches!(looped, "inf");
                     LOOPED.store(looped, Ordering::Relaxed);
-                };
+                }
                 debug!("LOOPED set to {}", LOOPED.load(Ordering::Relaxed));
             },
             | "volume" => {
                 info!("MPV: Property: Volume changed");
                 debug!("Volume: {json:#}");
-                if let Some(vol) = json.get("data").and_then(|v| v.as_f64()) {
+                if let Some(vol) = json.get("data").and_then(Value::as_f64) {
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
                     VOLUME.store(vol as u64, Ordering::Relaxed);
                 }
                 debug!("VOLUME set to {}", VOLUME.load(Ordering::Relaxed));
@@ -216,7 +218,7 @@ async fn handle_properties(json: Value) {
             | "mute" => {
                 info!("MPV Property: Mute toggled");
                 debug!("Mute property: {json:#}");
-                if let Some(muted) = json.get("data").and_then(|v| v.as_bool()) {
+                if let Some(muted) = json.get("data").and_then(Value::as_bool) {
                     MUTED.store(muted, Ordering::Relaxed);
                 }
                 debug!("MUTED set to {}", MUTED.load(Ordering::Relaxed));
@@ -224,10 +226,10 @@ async fn handle_properties(json: Value) {
             | "playback-time" => {
                 trace!("MPV Property: Playback time changed");
                 let mut track = TRACK.lock().await;
-                let time = json.get("data").and_then(|v| v.as_f64()).unwrap_or(0.);
+                let time = json.get("data").and_then(Value::as_f64).unwrap_or(0.);
                 trace!("Time: {time}");
 
-                track.update_progress(time).await;
+                track.update_progress(time);
 
                 if let Err(e) = queue().await {
                     error!("Failed to refresh queue: {e:#}");
@@ -260,7 +262,7 @@ async fn handle_properties(json: Value) {
                 }
 
                 // Scrobble track if it's more than a configurable percent through.
-                if time >= (track.duration * (CONFIG.lastfm.scrobble_percent as f64 / 100.))
+                if time >= (track.duration * (f64::from(CONFIG.lastfm.scrobble_percent) / 100.))
                     && FRESH.load(Ordering::Relaxed)
                 {
                     FRESH.store(false, Ordering::Relaxed);
@@ -269,6 +271,7 @@ async fn handle_properties(json: Value) {
                         // TODO: Implement display for track so the logs look nicer
                         info!("Scrobbling track: {track:#?}");
                         let track_copy = track.clone();
+                        drop(track);
                         tokio::spawn(async move {
                             if let Err(e) = lastfm_scrobble(track_copy).await {
                                 error!("Failed to scrobble track: {e:#?}");
@@ -278,7 +281,7 @@ async fn handle_properties(json: Value) {
                 }
             },
             | _ => {
-                warn!("MPV Property: Received unrecognized property:\n{json:#}")
+                warn!("MPV Property: Received unrecognized property:\n{json:#}");
             },
         }
     }
@@ -305,7 +308,7 @@ pub async fn launch() {
     // Record tuun-mpv's pid, but don't whine if something goes wrong
     if let Some(i) = pid {
         let _ = fs::write("/tmp/tuun/tuun-mpv.pid", i.to_string());
-    };
+    }
 
     for a in 1..=32 {
         sleep(Duration::from_millis(CONFIG.general.mpv_socket_poll_timeout)).await;
@@ -322,7 +325,7 @@ pub async fn launch() {
     {
         error!("MPV exited with a failure");
         if ARGS.playlist.is_some() {
-            error!("This is most likely caused by your playlist referencing inaccessible tracks")
+            error!("This is most likely caused by your playlist referencing inaccessible tracks");
         }
     }
 
@@ -331,7 +334,7 @@ pub async fn launch() {
             if queued {
                 info!("Starting with queued tracks");
                 if let Err(e) = send_command(r#"{ "command": ["playlist-next"] }"#).await {
-                    error!("Failed to skip track for queue start: {e}")
+                    error!("Failed to skip track for queue start: {e}");
                 }
             }
         },
@@ -341,12 +344,13 @@ pub async fn launch() {
 
 #[instrument]
 fn prequeue() -> Vec<String> {
+    // FIXME: This can probably be written less grossly(?)
     let playlist = &ARGS
         .playlist
         .clone()
-        .unwrap_or(CONFIG.general.playlist.clone());
-    debug!("Starting with playlist '{playlist}'");
+        .unwrap_or_else(|| CONFIG.general.playlist.clone());
 
+    debug!("Starting with playlist '{playlist}'");
     if !PathBuf::from(playlist).exists() {
         error!("Playlist '{playlist}' does not exist");
         panic!("Playlist '{playlist}' does not exist");

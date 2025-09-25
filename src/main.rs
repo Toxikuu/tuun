@@ -1,5 +1,3 @@
-#![deny(clippy::unwrap_used)]
-
 use std::{
     env,
     fs,
@@ -15,7 +13,6 @@ use std::{
 use config::Config;
 use discord_rich_presence::DiscordIpcClient;
 use integrations::connect_discord_rpc_client;
-use once_cell::sync::Lazy;
 use permitit::Permit;
 use rustfm_scrobble::Scrobbler;
 use tokio::sync::Mutex;
@@ -40,7 +37,7 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);
 pub static ARGS: LazyLock<args::Args> = LazyLock::new(args::parse_args);
 pub static RPC_CLIENT: LazyLock<Mutex<DiscordIpcClient>> =
     LazyLock::new(|| Mutex::new(DiscordIpcClient::new(&CONFIG.discord.client_id)));
-pub static SCROBBLER: Lazy<Mutex<Option<Arc<Scrobbler>>>> = Lazy::new(|| Mutex::new(None));
+pub static SCROBBLER: LazyLock<Mutex<Option<Arc<Scrobbler>>>> = LazyLock::new(|| Mutex::new(None));
 
 /// # Description
 /// Main loop (should never return)
@@ -52,7 +49,7 @@ pub static SCROBBLER: Lazy<Mutex<Option<Arc<Scrobbler>>>> = Lazy::new(|| Mutex::
 ///     4. Establish the music directory
 ///     5. Generate playlists
 ///     6. Optionally connect to Discord
-///     7. Optionally authenticate with LastFM
+///     7. Optionally authenticate with `LastFM`
 ///     8. Launch MPV
 ///     9. Block forever
 #[tokio::main]
@@ -61,7 +58,7 @@ async fn main() -> ! {
     let file_appender = rolling::never("/tmp/tuun", "log");
     let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
 
-    let log_level = env::var("TUUN_LOG_LEVEL").unwrap_or("info".to_string());
+    let log_level = env::var("TUUN_LOG_LEVEL").unwrap_or_else(|_| String::from("info"));
     let filter = EnvFilter::new(format!("{log_level},winit=info,calloop=info,polling=info"));
 
     tracing_subscriber::fmt()
@@ -121,7 +118,7 @@ async fn main() -> ! {
         info!("Launching MPV");
         mpv::launch().await;
         if let Err(e) = mpv::connect().await {
-            error!("Failed to connect to MPV's socket: {e:#?}")
+            error!("Failed to connect to MPV's socket: {e:#?}");
         }
     });
 

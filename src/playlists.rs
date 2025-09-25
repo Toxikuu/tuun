@@ -82,13 +82,7 @@ pub fn create_recent_playlist() {
         .expect("Failed to read music directory")
         .map_while(Result::ok)
         .map(|e| e.path())
-        .filter_map(|e| {
-            if let Ok(m) = e.metadata() {
-                m.modified().ok().map(|modtime| (e, modtime))
-            } else {
-                None
-            }
-        })
+        .filter_map(|e| e.metadata().map_or(None, |m| m.modified().ok().map(|modtime| (e, modtime))))
         .collect::<Vec<_>>();
 
     songs.sort_by_key(|(_, modtime)| modtime.to_owned());

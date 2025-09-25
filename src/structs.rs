@@ -86,11 +86,8 @@ impl LastFM<'_> {
 pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
 
 pub fn urlencode_arturl(arturl: &str) -> String {
-    let (proto, rest_of_url) = if let Some(index) = arturl.find("://") {
-        (&arturl[..index + 3], &arturl[index + 3..])
-    } else {
-        ("", arturl)
-    };
+    let (proto, rest_of_url) = arturl.find("://")
+        .map_or(("", arturl), |index| (&arturl[..index + 3], &arturl[index + 3..]));
     let encoded_rest = rest_of_url
         .split('/')
         .map(|part| encode(part).into_owned())
@@ -126,8 +123,8 @@ impl Track {
         Ok(PathBuf::from(filename))
     }
 
-    #[instrument(skip(self, data))]
-    pub fn get_arturl(&self, data: &serde_json::Map<String, Value>, tag: &Option<Tag>) -> Option<String> {
+    #[instrument(skip(data))]
+    pub fn get_arturl(data: &serde_json::Map<String, Value>, tag: Option<&Tag>) -> Option<String> {
         if let Some(url) = data.get("arturl").and_then(|v| v.as_str()) {
             debug!("Using key 'arturl' from mpv's metadata");
             return Some(url.to_string());
@@ -150,8 +147,8 @@ impl Track {
         None
     }
 
-    #[instrument(skip(self, data))]
-    pub fn get_artists(&self, data: &serde_json::Map<String, Value>, tag: &Option<Tag>) -> String {
+    #[instrument(skip(data))]
+    pub fn get_artists(data: &serde_json::Map<String, Value>, tag: Option<&Tag>) -> String {
         if let Some(tag) = tag {
             let artist = tag.artist();
             match artist {
@@ -205,7 +202,7 @@ impl Track {
             .and_then(|v| v.as_str())
             .unwrap_or("<Unknown title>")
             .to_string();
-        self.artist = self.get_artists(&data, &tag);
+        self.artist = Self::get_artists(&data, tag.as_ref());
         self.album = data
             .get("album")
             .and_then(|v| v.as_str())
@@ -217,9 +214,10 @@ impl Track {
             .unwrap_or("<Unknown date>")
             .to_string();
 
-        self.arturl = urlencode_arturl(&self
-            .get_arturl(&data, &tag)
-            .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string()));
+        self.arturl = urlencode_arturl(
+            &Self::get_arturl(&data, tag.as_ref())
+            .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string())
+        );
 
         debug!("Attempting to find duration");
         // duration is not technically metadata but i count it as such
@@ -228,7 +226,7 @@ impl Track {
             duration = send_command(r#"{"command": ["get_property", "duration"]}"#)
                 .await?
                 .get("data")
-                .and_then(|v| v.as_f64());
+                .and_then(Value::as_f64);
             if let Some(dur) = duration {
                 debug!("Fetched duration {dur} on attempt {a}");
                 break;
@@ -246,7 +244,7 @@ impl Track {
         Ok(())
     }
 
-    pub async fn update_progress(&mut self, progress: f64) {
+    pub fn update_progress(&mut self, progress: f64) {
         self.progress = progress;
         trace!("Updated progress to {progress}");
     }
@@ -305,14 +303,15 @@ impl Track {
     #[instrument]
     pub async fn rpc(&self) {
         if let Err(e) = integrations::discord_rpc(self.clone()).await {
-            error!("Error setting discord rpc: {e:#?}")
+            error!("Error setting discord rpc: {e:#?}");
         }
     }
 
     #[rustfmt::skip]
+    #[allow(clippy::float_cmp)] // handled with .round()
     pub fn is_default(&self) -> bool {
         self.progress == 0.
-            && self.duration == 1000.
+            && self.duration.round() == 1000.0
             && self.title    == String::with_capacity(0)
             && self.artist   == String::with_capacity(0)
             && self.album    == String::with_capacity(0)

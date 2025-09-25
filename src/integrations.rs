@@ -64,9 +64,10 @@ pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
         scrobbler.authenticate_with_password(lfm.username, lfm.password)?;
 
         *scrobbler_lock = Some(Arc::new(scrobbler));
+        drop(scrobbler_lock);
         info!("Authenticated lastfm scrobbler");
     } else {
-        debug!("Not authenticating as scrobbler_lock is Some")
+        debug!("Not authenticating as scrobbler_lock is Some");
     }
 
     Ok(())
@@ -85,6 +86,7 @@ pub async fn lastfm_now_playing(track: Track) -> Result<()> {
     let scrobbler = Arc::clone(scrobbler);
 
     tokio::task::spawn_blocking(move || scrobbler.now_playing(&track)).await??;
+    drop(scrobbler_lock);
 
     debug!("Set now playing");
     Ok(())
@@ -103,6 +105,7 @@ pub async fn lastfm_scrobble(track: Track) -> Result<()> {
     let scrobbler = Arc::clone(scrobbler);
 
     tokio::task::spawn_blocking(move || scrobbler.scrobble(&track)).await??;
+    drop(scrobbler_lock);
 
     debug!("Scrobbled");
     Ok(())
@@ -176,6 +179,7 @@ fn create_rpc_payload(track: &Track) -> Activity<'_> {
         .duration_since(UNIX_EPOCH)
         .expect("Grandfather paradox or something idk");
 
+    #[allow(clippy::cast_possible_wrap)]
     let timestamp = activity::Timestamps::new().start(duration.as_secs() as i64);
     let payload = activity::Activity::new()
         .state(&track.artist)
@@ -188,7 +192,9 @@ fn create_rpc_payload(track: &Track) -> Activity<'_> {
     payload
 }
 
+#[allow(clippy::significant_drop_tightening)]
 #[instrument]
+// TODO: See if this should be rewritten
 pub async fn connect_discord_rpc_client() {
     debug!("Attempting to connect Discord RPC client");
 
@@ -206,11 +212,11 @@ pub async fn connect_discord_rpc_client() {
         if let Err(e) = client.close().permit(|e| matches!(e, DrpErr::NotConnected)) {
             error!("Failed to close IPC client: {e}");
             return;
-        };
+        }
         if let Err(e) = client.connect() {
             error!("Failed to reconnect IPC client: {e}");
             return;
-        };
+        }
     }
 
     if let Err(e) = client.connect() {

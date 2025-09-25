@@ -177,7 +177,7 @@ impl Config {
             error!(
                 "Failed to copy default config from {default_config_path:?} to {config_path:?}: {e}"
             );
-            warn!("Did you run make install?")
+            warn!("Did you run make install?");
         }
     }
 }
