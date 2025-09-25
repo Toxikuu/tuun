@@ -15,7 +15,7 @@ use anyhow::{
 };
 use id3::{
     Content,
-    Tag,
+    Tag, TagLike,
 };
 use serde_json::Value;
 use tracing::{
@@ -127,38 +127,43 @@ impl Track {
     }
 
     #[instrument(skip(self, data))]
-    pub async fn get_arturl(&self, data: &serde_json::Map<String, Value>) -> Option<String> {
+    pub fn get_arturl(&self, data: &serde_json::Map<String, Value>, tag: &Option<Tag>) -> Option<String> {
         if let Some(url) = data.get("arturl").and_then(|v| v.as_str()) {
             debug!("Using key 'arturl' from mpv's metadata");
             return Some(url.to_string());
         }
 
-        let filepath = match self.query_filepath().await {
-            | Ok(f) => f,
-            | Err(e) => {
-                error!("Couldn't get filepath: {e}");
-                return None;
-            },
-        };
+        if let Some(tag) = tag {
+            let arturl = tag.frames().find_map(|f| match f.content() {
+                | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
+                | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
+                | _ => {
+                    warn!("Couldn't find arturl in extended text or cover in extended link frames");
+                    debug!("Frames: {f:#?}");
+                    None
+                },
+            });
 
-        let tag = match Tag::read_from_path(&filepath) {
-            | Ok(t) => t,
-            | Err(e) => {
-                error!("Couldn't read tag from path '{}': {e}", filepath.display());
-                return None;
-            },
-        };
+            return arturl;
+        }
 
-        let arturl = tag.frames().find_map(|f| match f.content() {
-            | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
-            | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
-            | _ => {
-                warn!("Couldn't find arturl in extended text or cover in extended link frames");
-                debug!("Frames: {f:#?}");
-                None
-            },
-        });
-        return arturl;
+        None
+    }
+
+    #[instrument(skip(self, data))]
+    pub fn get_artists(&self, data: &serde_json::Map<String, Value>, tag: &Option<Tag>) -> String {
+        if let Some(tag) = tag {
+            let artist = tag.artist();
+            match artist {
+                Some(a) => return a.split('\0').collect::<Vec<_>>().join(", "),
+                None => return String::from("<Unknown artist>"),
+            }
+        }
+
+        data.get("artist")
+            .and_then(|v| v.as_str())
+            .unwrap_or("<Unknown artist>")
+            .to_string()
     }
 
     #[instrument(level = "debug")]
@@ -174,16 +179,33 @@ impl Track {
             .map(|(k, v)| (k.to_lowercase(), v.clone()))
             .collect();
 
+        let filepath = match self.query_filepath().await {
+            | Ok(f) => Some(f),
+            | Err(e) => {
+                warn!("Couldn't get filepath: {e}");
+                warn!("Metadata might be less accurate");
+                None
+            },
+        };
+
+        let tag = if let Some(f) = filepath
+            && let Some(ext) = f.extension()
+            && ext.eq_ignore_ascii_case("mp3") {
+            match Tag::read_from_path(&f) {
+                | Ok(t) => Some(t),
+                | Err(e) => {
+                    error!("Couldn't read tag from path '{}': {e}", f.display());
+                    None
+                },
+            }
+        } else { None };
+
         self.title = data
             .get("title")
             .and_then(|v| v.as_str())
             .unwrap_or("<Unknown title>")
             .to_string();
-        self.artist = data
-            .get("artist")
-            .and_then(|v| v.as_str())
-            .unwrap_or("<Unknown artist>")
-            .to_string();
+        self.artist = self.get_artists(&data, &tag);
         self.album = data
             .get("album")
             .and_then(|v| v.as_str())
@@ -196,8 +218,7 @@ impl Track {
             .to_string();
 
         self.arturl = urlencode_arturl(&self
-            .get_arturl(&data)
-            .await
+            .get_arturl(&data, &tag)
             .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string()));
 
         debug!("Attempting to find duration");
