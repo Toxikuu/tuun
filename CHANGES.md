@@ -1,3 +1,9 @@
+## 5.5.0
+- Tweak metadata extraction
+- Add and address clippy lints
+- Update dependencies
+- Formatting
+
 ## 5.4.2
 - Update dependencies
 
