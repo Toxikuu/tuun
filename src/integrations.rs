@@ -12,10 +12,13 @@ use anyhow::{
     bail,
 };
 use discord_rich_presence::{
+    DiscordIpc,
     activity::{
         self,
-        Activity, StatusDisplayType,
-    }, error::Error as DrpErr, DiscordIpc
+        Activity,
+        StatusDisplayType,
+    },
+    error::Error as DrpErr,
 };
 use permitit::Permit;
 use rustfm_scrobble::{
@@ -181,7 +184,9 @@ fn create_rpc_payload(track: &Track) -> Activity<'_> {
     let end = start + Duration::from_secs_f64(track.duration);
 
     #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)] // TODO: <
-    let timestamp = activity::Timestamps::new().start(start.as_millis() as i64).end(end.as_millis() as i64);
+    let timestamp = activity::Timestamps::new()
+        .start(start.as_millis() as i64)
+        .end(end.as_millis() as i64);
 
     let payload = if let Some(srcurl) = &track.srcurl {
         activity::Activity::new()

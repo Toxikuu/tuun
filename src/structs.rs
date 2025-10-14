@@ -89,9 +89,9 @@ impl LastFM<'_> {
 pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
 
 pub fn urlencode(url: &str) -> String {
-    let (proto, rest_of_url) = url.find("://").map_or(("", url), |index| {
-        (&url[..index + 3], &url[index + 3..])
-    });
+    let (proto, rest_of_url) = url
+        .find("://")
+        .map_or(("", url), |index| (&url[..index + 3], &url[index + 3..]));
     let encoded_rest = rest_of_url
         .split('/')
         .map(|part| encode(part).into_owned())
@@ -137,7 +137,9 @@ impl Track {
         if let Some(tag) = tag {
             let arturl = tag.frames().find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
+                | Content::ExtendedText(t) if t.description == "arturl" => {
+                    Some(strip_null(&t.value))
+                },
                 | _ => {
                     warn!("Couldn't find arturl in extended text or cover in extended link frames");
                     debug!("Frames: {f:#?}");
@@ -161,7 +163,9 @@ impl Track {
         if let Some(tag) = tag {
             let srcurl = tag.frames().find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Source" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "srcurl" => Some(strip_null(&t.value)),
+                | Content::ExtendedText(t) if t.description == "srcurl" => {
+                    Some(strip_null(&t.value))
+                },
                 | _ => {
                     warn!("Couldn't find srcurl in extended text or cover in extended link frames");
                     debug!("Frames: {f:#?}");
@@ -248,8 +252,7 @@ impl Track {
         self.arturl = Self::get_arturl(&data, tag.as_ref())
             .map_or_else(|| CONFIG.discord.fallback_art.clone(), |u| urlencode(&u));
 
-        self.srcurl = Self::get_srcurl(&data, tag.as_ref())
-            .map(|u| urlencode(&u));
+        self.srcurl = Self::get_srcurl(&data, tag.as_ref()).map(|u| urlencode(&u));
 
         debug!("Attempting to find duration");
         // duration is not technically metadata but i count it as such
