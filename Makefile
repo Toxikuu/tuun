@@ -6,6 +6,13 @@ build:
 clean:
 	cargo clean
 
+lint:
+	cargo clippy
+
+format:
+	rustup component add --toolchain nightly-x86_64-unknown-linux-gnu rustfmt
+	cargo +nightly fmt
+
 install:
 	install -Dm644 ./config.toml       $(DESTDIR)/usr/share/tuun/default_config.toml
 	install -Dm755 target/release/tuun $(DESTDIR)/usr/libexec/tuun
