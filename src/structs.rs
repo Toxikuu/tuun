@@ -43,6 +43,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Track {
     pub arturl:   String,
+    pub srcurl:   Option<String>,
     pub title:    String,
     pub artist:   String,
     pub album:    String,
@@ -55,6 +56,7 @@ impl Default for Track {
     fn default() -> Self {
         Self {
             arturl:   String::new(),
+            srcurl:   None,
             title:    String::new(),
             artist:   String::new(),
             album:    String::new(),
@@ -86,9 +88,9 @@ impl LastFM<'_> {
 
 pub fn strip_null(s: &str) -> String { s.replace('\0', "") }
 
-pub fn urlencode_arturl(arturl: &str) -> String {
-    let (proto, rest_of_url) = arturl.find("://").map_or(("", arturl), |index| {
-        (&arturl[..index + 3], &arturl[index + 3..])
+pub fn urlencode(url: &str) -> String {
+    let (proto, rest_of_url) = url.find("://").map_or(("", url), |index| {
+        (&url[..index + 3], &url[index + 3..])
     });
     let encoded_rest = rest_of_url
         .split('/')
@@ -125,7 +127,7 @@ impl Track {
         Ok(PathBuf::from(filename))
     }
 
-    #[instrument(skip(data))]
+    #[instrument(skip(data, tag))]
     pub fn get_arturl(data: &serde_json::Map<String, Value>, tag: Option<&Tag>) -> Option<String> {
         if let Some(url) = data.get("arturl").and_then(|v| v.as_str()) {
             debug!("Using key 'arturl' from mpv's metadata");
@@ -135,9 +137,7 @@ impl Track {
         if let Some(tag) = tag {
             let arturl = tag.frames().find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "arturl" => {
-                    Some(strip_null(&t.value))
-                },
+                | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
                 | _ => {
                     warn!("Couldn't find arturl in extended text or cover in extended link frames");
                     debug!("Frames: {f:#?}");
@@ -151,7 +151,31 @@ impl Track {
         None
     }
 
-    #[instrument(skip(data))]
+    #[instrument(skip(data, tag))]
+    pub fn get_srcurl(data: &serde_json::Map<String, Value>, tag: Option<&Tag>) -> Option<String> {
+        if let Some(url) = data.get("srcurl").and_then(|v| v.as_str()) {
+            debug!("Using key 'srcurl' from mpv's metadata");
+            return Some(url.to_string());
+        }
+
+        if let Some(tag) = tag {
+            let srcurl = tag.frames().find_map(|f| match f.content() {
+                | Content::ExtendedLink(l) if l.description == "Source" => Some(l.link.clone()),
+                | Content::ExtendedText(t) if t.description == "srcurl" => Some(strip_null(&t.value)),
+                | _ => {
+                    warn!("Couldn't find srcurl in extended text or cover in extended link frames");
+                    debug!("Frames: {f:#?}");
+                    None
+                },
+            });
+
+            return srcurl;
+        }
+
+        None
+    }
+
+    #[instrument(skip(data, tag))]
     pub fn get_artists(data: &serde_json::Map<String, Value>, tag: Option<&Tag>) -> String {
         if let Some(tag) = tag {
             let artist = tag.artist();
@@ -221,10 +245,11 @@ impl Track {
             .unwrap_or("<Unknown date>")
             .to_string();
 
-        self.arturl = urlencode_arturl(
-            &Self::get_arturl(&data, tag.as_ref())
-                .unwrap_or_else(|| CONFIG.discord.fallback_art.to_string()),
-        );
+        self.arturl = Self::get_arturl(&data, tag.as_ref())
+            .map_or_else(|| CONFIG.discord.fallback_art.clone(), |u| urlencode(&u));
+
+        self.srcurl = Self::get_srcurl(&data, tag.as_ref())
+            .map(|u| urlencode(&u));
 
         debug!("Attempting to find duration");
         // duration is not technically metadata but i count it as such

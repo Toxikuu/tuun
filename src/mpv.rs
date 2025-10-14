@@ -188,10 +188,6 @@ async fn handle_properties(json: Value) {
                     error!("Failed to update metadata: {e:#?}");
                 }
 
-                info!("Now playing '{track}'");
-                if CONFIG.discord.used {
-                    track.rpc().await;
-                }
                 drop(track);
             },
             | "loop-file" => {
@@ -250,6 +246,7 @@ async fn handle_properties(json: Value) {
                     && !NOW_PLAYING_SET.load(Ordering::Relaxed)
                 {
                     NOW_PLAYING_SET.store(true, Ordering::Relaxed);
+                    info!("Now playing '{track}'");
 
                     if CONFIG.lastfm.used {
                         info!("Setting LastFM now playing");
@@ -259,6 +256,11 @@ async fn handle_properties(json: Value) {
                                 error!("Failed to set LastFM now playing: {e:#?}");
                             }
                         });
+                    }
+
+                    if CONFIG.discord.used {
+                        info!("Setting Discord Rich Presence");
+                        track.rpc().await;
                     }
                 }
 

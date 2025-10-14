@@ -63,8 +63,9 @@ impl Default for DiscordConfig {
             used:         true,
             client_id:    "1272345557276295310".to_owned(),
             fallback_art: "https://w7.pngwing.com/pngs/387/453/png-transparent-phonograph-record-lp-record-45-rpm-album-concerts-miscellaneous-photography-sound-thumbnail.png".to_owned(),
-            small_image:  "https://cdn.discordapp.com/avatars/495603896803262507/4c3f854b1aa44e41850908d06c17bd25".to_owned(),
-            small_text:   "hiii".to_owned(),
+            small_image:  "https://cdn.discordapp.com/avatars/495603896803262507/4c3f854b1aa44e41850908d06c17bd25".to_owned(), // TODO: Add tuun logo
+            small_text:   format!("tuun {}", env!("CARGO_PKG_VERSION")),
+            small_url:    "https://github.com/toxikuu/tuun".to_owned(),
             timeout:      100,
         }
     }
@@ -78,6 +79,7 @@ pub struct DiscordConfig {
     pub fallback_art: String,
     pub small_image:  String,
     pub small_text:   String,
+    pub small_url:    String,
     /// Timeout in milliseconds for discord ipc socket connections
     pub timeout:      u64,
 }

@@ -12,12 +12,10 @@ use anyhow::{
     bail,
 };
 use discord_rich_presence::{
-    DiscordIpc,
     activity::{
         self,
-        Activity,
-    },
-    error::Error as DrpErr,
+        Activity, StatusDisplayType,
+    }, error::Error as DrpErr, DiscordIpc
 };
 use permitit::Permit;
 use rustfm_scrobble::{
@@ -170,25 +168,41 @@ fn create_rpc_payload(track: &Track) -> Activity<'_> {
     let assets = activity::Assets::new()
         .large_image(&track.arturl)
         .large_text(&track.album)
+        .large_url(&track.arturl)
         .small_image(&CONFIG.discord.small_image)
-        .small_text(&CONFIG.discord.small_text);
+        .small_text(&CONFIG.discord.small_text)
+        .small_url("https://github.com/toxikuu/tuun");
     debug!("Created rich presence activity assets");
 
     let now = SystemTime::now();
-    let duration = now
+    let start = now
         .duration_since(UNIX_EPOCH)
         .expect("Grandfather paradox or something idk");
+    let end = start + Duration::from_secs_f64(track.duration);
 
-    #[allow(clippy::cast_possible_wrap)]
-    let timestamp = activity::Timestamps::new().start(duration.as_secs() as i64);
-    let payload = activity::Activity::new()
-        .state(&track.artist)
-        .details(&track.title)
-        .assets(assets)
-        .activity_type(activity::ActivityType::Listening)
-        .timestamps(timestamp);
+    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)] // TODO: <
+    let timestamp = activity::Timestamps::new().start(start.as_millis() as i64).end(end.as_millis() as i64);
+
+    let payload = if let Some(srcurl) = &track.srcurl {
+        activity::Activity::new()
+            .state(&track.artist)
+            .details(&track.title)
+            .details_url(srcurl)
+            .assets(assets)
+            .activity_type(activity::ActivityType::Listening)
+            .status_display_type(StatusDisplayType::Details)
+            .timestamps(timestamp)
+    } else {
+        activity::Activity::new()
+            .state(&track.artist)
+            .details(&track.title)
+            .assets(assets)
+            .activity_type(activity::ActivityType::Listening)
+            .status_display_type(StatusDisplayType::Details)
+            .timestamps(timestamp)
+    };
+
     debug!("Created rich presence activity payload");
-
     payload
 }
 
