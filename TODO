@@ -4,11 +4,6 @@ TODO
 
     Documentation!!!
 
-    Maybe make discord IPC wait till 5 seconds into a song if you skip more than
-    like 3 songs in a row because it currently plays catch up lol
-
-    Write a function to attempt to refresh the discord IPC connection on fails
-
     Add a dist.sh script to create a binary dist tarball
 
     Add configure, Makefile prefix should default to /usr/local
@@ -16,6 +11,11 @@ TODO
 WIP
 
 DONEISH
+
+    Write a function to attempt to refresh the discord IPC connection on fails
+
+    Maybe make discord IPC wait till 5 seconds into a song if you skip more than
+    like 3 songs in a row because it currently plays catch up lol
 
     Vendor rustfm_scrobble
         Fork it, update stuff to whisk away the security vulnerabilities, fix any resulting issues
@@ -84,10 +84,3 @@ IDEAS
         Have another terminal window open up and display the lyrics (centered)
 
     Allow field configuration in config.toml
-
-ROADMAP
-
-    Features for first proper release
-        [*] makefiles
-        [-] basic documentation
-        [*] testing
