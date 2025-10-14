@@ -1,3 +1,10 @@
+## 5.6.0
+- Improve Discord integration
+    - Make use of source url field
+- Update dependencies
+- Formatting
+- Add make targets for linting and formatting
+
 ## 5.5.0
 - Tweak metadata extraction
 - Add and address clippy lints
