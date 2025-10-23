@@ -169,18 +169,26 @@ impl Config {
 
     fn create_default(config_path: &Path) {
         let default_config_path = PathBuf::from("/usr/share/tuun/default_config.toml");
-        info!("Copying default config from {} to {}",
-            default_config_path.display(), config_path.display());
+        info!(
+            "Copying default config from {} to {}",
+            default_config_path.display(),
+            config_path.display()
+        );
 
-        let config_dir = config_path.parent().expect("Config dir's parent should exist");
+        let config_dir = config_path
+            .parent()
+            .expect("Config dir's parent should exist");
         if !config_dir.exists() {
             fs::create_dir_all(config_dir).expect("Failed to create config directory");
             info!("Created config directory at '{}'", config_dir.display());
         }
 
         if let Err(e) = fs::copy(&default_config_path, config_path) {
-            error!("Failed to copy default config from '{}' to '{}': {e}",
-                default_config_path.display(), config_path.display());
+            error!(
+                "Failed to copy default config from '{}' to '{}': {e}",
+                default_config_path.display(),
+                config_path.display()
+            );
             warn!("Did you run make install?");
         }
     }

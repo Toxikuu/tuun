@@ -180,7 +180,8 @@ fn create_rpc_payload(track: &Track, now_ago: Duration) -> Activity<'_> {
     let now = SystemTime::now();
     let start = now
         .duration_since(UNIX_EPOCH)
-        .expect("Grandfather paradox or something idk") - now_ago;
+        .expect("Grandfather paradox or something idk")
+        - now_ago;
     let end = start + Duration::from_secs_f64(track.duration);
 
     #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)] // TODO: <

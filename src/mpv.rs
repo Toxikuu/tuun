@@ -244,7 +244,8 @@ async fn handle_properties(json: Value) {
                 // Set LastFM and Discord Rich Presence now playing if the track has been playing
                 // for 5 seconds, or it's more than 5% through.
                 #[allow(clippy::cast_precision_loss)]
-                let delay = (track.duration * 0.05).min(CONFIG.general.now_playing_delay as f64 / 1000.);
+                let delay =
+                    (track.duration * 0.05).min(CONFIG.general.now_playing_delay as f64 / 1000.);
                 if time >= delay && !NOW_PLAYING_SET.load(Ordering::Relaxed) {
                     NOW_PLAYING_SET.store(true, Ordering::Relaxed);
                     info!("Pushing now playing status for '{track}'");
@@ -318,7 +319,7 @@ pub async fn launch() {
 
     for a in 1..=32 {
         sleep(Duration::from_millis(
-            CONFIG.general.mpv_socket_poll_timeout as u64
+            CONFIG.general.mpv_socket_poll_timeout as u64,
         ))
         .await;
         debug!("Polling MPV socket {a}/32...");

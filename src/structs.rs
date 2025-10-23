@@ -5,7 +5,8 @@ use std::{
         Write,
     },
     path::PathBuf,
-    sync::atomic::Ordering, time::Duration,
+    sync::atomic::Ordering,
+    time::Duration,
 };
 
 use anyhow::{
