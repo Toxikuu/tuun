@@ -95,6 +95,7 @@ impl Default for GeneralConfig {
             ),
             recent_length:           200,
             mpv_socket_poll_timeout: 96,
+            now_playing_delay:       4224,
         }
     }
 }
@@ -124,29 +125,25 @@ pub struct GeneralConfig {
     pub playlist:                String,
     pub music_dir:               String,
     pub recent_length:           usize,
-    pub mpv_socket_poll_timeout: u64,
+    pub mpv_socket_poll_timeout: usize,
+    pub now_playing_delay:       usize,
 }
 
 impl Config {
     pub fn load() -> Self {
-        // TODO: Consider using home_dir instead
-        let home_dir = PathBuf::from(
-            env::var("HOME").expect("Couldn't find home directory ($HOME is not set)"),
-        );
-        let home_dir_str = home_dir.to_string_lossy();
-        debug!("Detected home directory: {home_dir:?}");
+        let home_dir = homedir::my_home()
+            .expect("Couldn't find home directory")
+            .expect("Couldn't find home directory");
+        debug!("Detected home directory: '{}'", home_dir.display());
 
-        let config_dir = home_dir.join(".config").join("tuun");
-        let config_path = config_dir.join("config.toml");
-
+        let config_path = home_dir.join(".config/tuun/config.toml");
         if !config_path.exists() {
-            info!("Default config does not exist");
-            info!("Creating it...");
-            Self::create_default(&home_dir, &config_path);
+            info!("Creating default config");
+            Self::create_default(&config_path);
         }
 
         let Ok(config_str) = fs::read_to_string(&config_path) else {
-            error!("Couldn't find config.toml at {config_path:?} despite creating it");
+            error!("Couldn't find config.toml at {}", config_path.display());
             panic!()
         };
 
@@ -159,6 +156,7 @@ impl Config {
         };
 
         // allow ~ and $HOME in paths in config.toml
+        let home_dir_str = home_dir.to_string_lossy();
         config.general.music_dir = config.general.music_dir.replacen('~', &home_dir_str, 1);
         config.general.playlist = config.general.playlist.replacen('~', &home_dir_str, 1);
         config.general.music_dir = config.general.music_dir.replacen("$HOME", &home_dir_str, 1);
@@ -169,19 +167,20 @@ impl Config {
         config
     }
 
-    fn create_default(config_dir: &Path, config_path: &Path) {
+    fn create_default(config_path: &Path) {
         let default_config_path = PathBuf::from("/usr/share/tuun/default_config.toml");
-        info!("Copying default config from {default_config_path:?} to {config_path:?}");
+        info!("Copying default config from {} to {}",
+            default_config_path.display(), config_path.display());
 
+        let config_dir = config_path.parent().expect("Config dir's parent should exist");
         if !config_dir.exists() {
             fs::create_dir_all(config_dir).expect("Failed to create config directory");
-            info!("Created config directory at {config_dir:?}");
+            info!("Created config directory at '{}'", config_dir.display());
         }
 
         if let Err(e) = fs::copy(&default_config_path, config_path) {
-            error!(
-                "Failed to copy default config from {default_config_path:?} to {config_path:?}: {e}"
-            );
+            error!("Failed to copy default config from '{}' to '{}': {e}",
+                default_config_path.display(), config_path.display());
             warn!("Did you run make install?");
         }
     }

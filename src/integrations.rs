@@ -113,7 +113,7 @@ pub async fn lastfm_scrobble(track: Track) -> Result<()> {
 }
 
 #[instrument(skip(track))]
-pub async fn discord_rpc(track: Track) -> Result<()> {
+pub async fn discord_rpc(track: Track, now_ago: Duration) -> Result<()> {
     if !CONFIG.discord.used {
         debug!("Skipping discord RPC as Discord is unused in the config");
         return Ok(());
@@ -144,7 +144,7 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
             connect_discord_rpc_client().await;
         }
 
-        let payload = create_rpc_payload(&track);
+        let payload = create_rpc_payload(&track, now_ago);
         debug!("Setting Discord RPC for {track:#?}");
 
         if let Err(e) = client.set_activity(payload) {
@@ -154,7 +154,7 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
             connect_discord_rpc_client().await;
             client = RPC_CLIENT.lock().await;
 
-            let payload = create_rpc_payload(&track);
+            let payload = create_rpc_payload(&track, now_ago);
             if let Err(e) = client.set_activity(payload) {
                 error!("Failed to set activity after reconnect: {e:#}");
             }
@@ -166,7 +166,7 @@ pub async fn discord_rpc(track: Track) -> Result<()> {
 }
 
 #[instrument]
-fn create_rpc_payload(track: &Track) -> Activity<'_> {
+fn create_rpc_payload(track: &Track, now_ago: Duration) -> Activity<'_> {
     debug!("Encoded arturl is 'track.arturl'");
     let assets = activity::Assets::new()
         .large_image(&track.arturl)
@@ -180,7 +180,7 @@ fn create_rpc_payload(track: &Track) -> Activity<'_> {
     let now = SystemTime::now();
     let start = now
         .duration_since(UNIX_EPOCH)
-        .expect("Grandfather paradox or something idk");
+        .expect("Grandfather paradox or something idk") - now_ago;
     let end = start + Duration::from_secs_f64(track.duration);
 
     #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)] // TODO: <

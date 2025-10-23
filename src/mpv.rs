@@ -235,22 +235,25 @@ async fn handle_properties(json: Value) {
                 if time == 0. {
                     FRESH.store(true, Ordering::Relaxed);
                     NOW_PLAYING_SET.store(false, Ordering::Relaxed);
+                    info!("Now playing '{track}'");
                     debug!("Registered track '{track:#?}' as fresh");
                 }
 
                 track.display();
 
-                // Set LastFM now playing if the track has been playing for 5 seconds, or it's more
-                // than 5% through.
-                if time >= (track.duration * 0.05).min(5.)
-                    && !NOW_PLAYING_SET.load(Ordering::Relaxed)
-                {
+                // Set LastFM and Discord Rich Presence now playing if the track has been playing
+                // for 5 seconds, or it's more than 5% through.
+                #[allow(clippy::cast_precision_loss)]
+                let delay = (track.duration * 0.05).min(CONFIG.general.now_playing_delay as f64 / 1000.);
+                if time >= delay && !NOW_PLAYING_SET.load(Ordering::Relaxed) {
                     NOW_PLAYING_SET.store(true, Ordering::Relaxed);
-                    info!("Now playing '{track}'");
+                    info!("Pushing now playing status for '{track}'");
 
                     if CONFIG.lastfm.used {
                         info!("Setting LastFM now playing");
                         let track_copy = track.clone();
+                        // TODO: Consider making `lastfm_now_playing` spawn its own thread rather
+                        // than having the caller do it
                         tokio::spawn(async move {
                             if let Err(e) = lastfm_now_playing(track_copy).await {
                                 error!("Failed to set LastFM now playing: {e:#?}");
@@ -260,7 +263,7 @@ async fn handle_properties(json: Value) {
 
                     if CONFIG.discord.used {
                         info!("Setting Discord Rich Presence");
-                        track.rpc().await;
+                        track.rpc(Duration::from_secs_f64(delay)).await;
                     }
                 }
 
@@ -315,7 +318,7 @@ pub async fn launch() {
 
     for a in 1..=32 {
         sleep(Duration::from_millis(
-            CONFIG.general.mpv_socket_poll_timeout,
+            CONFIG.general.mpv_socket_poll_timeout as u64
         ))
         .await;
         debug!("Polling MPV socket {a}/32...");

@@ -5,7 +5,7 @@ use std::{
         Write,
     },
     path::PathBuf,
-    sync::atomic::Ordering,
+    sync::atomic::Ordering, time::Duration,
 };
 
 use anyhow::{
@@ -336,8 +336,8 @@ impl Track {
     }
 
     #[instrument]
-    pub async fn rpc(&self) {
-        if let Err(e) = integrations::discord_rpc(self.clone()).await {
+    pub async fn rpc(&self, now_ago: Duration) {
+        if let Err(e) = integrations::discord_rpc(self.clone(), now_ago).await {
             error!("Error setting discord rpc: {e:#?}");
         }
     }

@@ -43,3 +43,6 @@ playlist = "~/Music/Playlists/new.tpl"
 recent_length = 200
 # milliseconds to wait when polling mpv's socket on launch
 mpv_socket_poll_timeout = 96
+# milliseconds to wait before making discord and lastfm API calls to set now
+# playing status
+now_playing_delay = 4224
