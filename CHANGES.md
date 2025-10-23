@@ -1,3 +1,10 @@
+## 5.6.1
+- Fix now playing timestamp innaccuracy for Discord Rich Presence
+- Make the now playing delay configurable
+- Tweak config handling and default config
+- Update dependencies
+- Update todos
+
 ## 5.6.0
 - Improve Discord integration
     - Make use of source url field
