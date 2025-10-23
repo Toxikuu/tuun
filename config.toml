@@ -28,9 +28,9 @@ timeout = 100
 # 6-char and 3-char are supported
 # starting # is optional
 [color]
-primary = "#f35f7a"
-secondary = "3b4e84"
-tertiary = "#e5e5e5"
+primary = "#cdcddd"
+secondary = "#333333"
+tertiary = "#e5e5f5"
 
 [general]
 shuffle = true
