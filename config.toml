@@ -33,6 +33,8 @@ secondary = "#333333"
 tertiary = "#e5e5f5"
 
 [general]
+# a list of artists whose names contain commas
+artists_with_commas = [ "Tyler, The Creator" ]
 shuffle = true
 # `$HOME` and `~` are the only path expansions allowed
 music_dir = "~/Music"

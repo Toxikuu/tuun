@@ -102,6 +102,19 @@ pub fn urlencode(url: &str) -> String {
 }
 
 impl Track {
+    /// Returns the primary artist, accounting for configured exceptions
+    pub fn get_primary_artist(&self) -> String {
+        if !self.artist.contains(',') { return self.artist.clone() }
+
+        for exception in &CONFIG.general.artists_with_commas {
+            if self.artist.starts_with(exception) {
+                return exception.clone()
+            }
+        }
+
+        self.artist.split_once(',').expect("Handled by a check at the start of the function").0.trim().to_string()
+    }
+
     // TODO: See if this should be used anywhere
     #[allow(unused)]
     pub async fn query_metadata(&self) -> Result<Value> {

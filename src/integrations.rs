@@ -83,7 +83,7 @@ pub async fn lastfm_now_playing(track: Track) -> Result<()> {
         bail!("Scrobbler is not initialized");
     };
 
-    let track = Scrobble::new(&track.artist, &track.title, &track.album);
+    let track = Scrobble::new(&track.get_primary_artist(), &track.title, &track.album);
     let scrobbler = Arc::clone(scrobbler);
 
     tokio::task::spawn_blocking(move || scrobbler.now_playing(&track)).await??;
@@ -102,7 +102,7 @@ pub async fn lastfm_scrobble(track: Track) -> Result<()> {
         bail!("Scrobbler is not initialized");
     };
 
-    let track = Scrobble::new(&track.artist, &track.title, &track.album);
+    let track = Scrobble::new(&track.get_primary_artist(), &track.title, &track.album);
     let scrobbler = Arc::clone(scrobbler);
 
     tokio::task::spawn_blocking(move || scrobbler.scrobble(&track)).await??;

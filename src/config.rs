@@ -87,6 +87,7 @@ pub struct DiscordConfig {
 impl Default for GeneralConfig {
     fn default() -> Self {
         Self {
+            artists_with_commas:     vec!["Tyler, The Creator".into()],
             shuffle:                 true,
             playlist:                "/tmp/tuun/all.tpl".to_owned(),
             music_dir:               format!(
@@ -121,6 +122,7 @@ impl Default for ColorConfig {
 #[derive(Deserialize, Debug)]
 #[serde(default)]
 pub struct GeneralConfig {
+    pub artists_with_commas:     Vec<String>,
     pub shuffle:                 bool,
     pub playlist:                String,
     pub music_dir:               String,
