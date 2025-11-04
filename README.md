@@ -23,6 +23,7 @@ Tuun currently supports at least the following fun and fancy features:
 
 I've decided to use Makefiles to simplify stuff. This should be all it takes:
 ```bash
+./configure
 make
 sudo make install
 ```
