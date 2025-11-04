@@ -74,9 +74,48 @@ pub async fn authenticate_lastfm_scrobbler() -> Result<()> {
     Ok(())
 }
 
+#[instrument]
+/// Version of [`authenticate_lastfm_scrobbler()`] that doesn't check if the lock is taken
+pub async fn authenticate_lastfm_scrobbler_unchecked() -> Result<()> {
+    let mut scrobbler_lock = SCROBBLER.lock().await;
+
+    info!("Authenticating lastfm scrobbler...");
+    let lfm = LastFM::new();
+
+    if lfm.apikey.is_empty()
+        || lfm.secret.is_empty()
+        || lfm.username.is_empty()
+        || lfm.password.is_empty()
+    {
+        warn!("Cowardly refusing to authenticate without credentials");
+        bail!("Cowardly refusing to authenticate without credentials");
+    }
+
+    let mut scrobbler = Scrobbler::new(lfm.apikey, lfm.secret);
+    scrobbler.authenticate_with_password(lfm.username, lfm.password)?;
+
+    *scrobbler_lock = Some(Arc::new(scrobbler));
+    drop(scrobbler_lock);
+    info!("Authenticated lastfm scrobbler");
+
+    Ok(())
+}
+
 #[instrument(skip(track))]
 pub async fn lastfm_now_playing(track: Track) -> Result<()> {
     let scrobbler_lock = SCROBBLER.lock().await;
+
+    for att in 1..=3 {
+        if scrobbler_lock.is_none() {
+            warn!("Trying to initialize scrobbler");
+            if let Err(e) = authenticate_lastfm_scrobbler_unchecked().await {
+                error!("Failed to initialize scrobbler: {e}")
+            };
+        } else {
+            debug!("Got scrobbler lock on attempt {att}");
+            break;
+        }
+    }
 
     let Some(scrobbler) = &*scrobbler_lock else {
         error!("Scrobbler is not initialized");
@@ -96,6 +135,18 @@ pub async fn lastfm_now_playing(track: Track) -> Result<()> {
 #[instrument(skip(track))]
 pub async fn lastfm_scrobble(track: Track) -> Result<()> {
     let scrobbler_lock = SCROBBLER.lock().await;
+
+    for att in 1..=3 {
+        if scrobbler_lock.is_none() {
+            warn!("Trying to initialize scrobbler");
+            if let Err(e) = authenticate_lastfm_scrobbler_unchecked().await {
+                error!("Failed to initialize scrobbler: {e}")
+            };
+        } else {
+            debug!("Got scrobbler lock on attempt {att}");
+            break;
+        }
+    }
 
     let Some(scrobbler) = &*scrobbler_lock else {
         error!("Scrobbler is not initialized");
