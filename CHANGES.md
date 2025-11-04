@@ -1,3 +1,11 @@
+## 5.7.0
+- Use primary artist for LastFM scrobbling (fixes #13)
+- Rework music directory fallback logic (fixes #14)
+- Attempt to reinitialize LastFM scrobbler
+- Add configure and improve Makefile
+- Improve portability in scripts
+- Update readme, todos
+
 ## 5.6.1
 - Fix now playing timestamp innaccuracy for Discord Rich Presence
 - Make the now playing delay configurable
