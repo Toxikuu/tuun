@@ -1,7 +1,26 @@
-all: build
+-include config.mk
 
-build:
+all: tuun scripts
+
+tuun:
+	PREFIX=$(PREFIX) \
+	BINDIR=$(BINDIR) \
+	DATADIR=$(DATADIR) \
+	LIBEXECDIR=$(LIBEXECDIR) \
 	cargo build --release
+
+SCRIPTS := $(shell find scripts -type f)
+TARGET_SCRIPTS := $(patsubst scripts/%,target/scripts/%,$(SCRIPTS))
+
+scripts: $(TARGET_SCRIPTS)
+
+$(TARGET_SCRIPTS): target/scripts/% : scripts/%
+	@mkdir -p $(dir $@)
+	sed -e 's,%PREFIX%,$(PREFIX),g' \
+	    -e 's,%BINDIR%,$(BINDIR),g' \
+	    -e 's,%DATADIR%,$(DATADIR),g' \
+	    -e 's,%LIBEXECDIR%,$(LIBEXECDIR),g' \
+	    $< > $@
 
 clean:
 	cargo clean
@@ -14,12 +33,14 @@ format:
 	cargo +nightly fmt
 
 install:
-	install -Dm644 ./config.toml       $(DESTDIR)/usr/share/tuun/default_config.toml
-	install -Dm755 target/release/tuun $(DESTDIR)/usr/libexec/tuun
-	install -Dm755 scripts/tuun.sh     $(DESTDIR)/usr/bin/tuun
-	install -Dm755 scripts/quu.sh      $(DESTDIR)/usr/bin/quu
-	install -Dm755 scripts/fzm         $(DESTDIR)/usr/bin/fzm
+	install -Dm644 ./config.toml            $(DESTDIR)$(DATADIR)/default_config.toml
+	install -Dm755 target/release/tuun      $(DESTDIR)$(LIBEXECDIR)/tuun
+	install -Dm755 target/scripts/tuun.sh   $(DESTDIR)$(BINDIR)/tuun
+	install -Dm755 target/scripts/quu.sh    $(DESTDIR)$(BINDIR)/quu
+	install -Dm755 target/scripts/fzm       $(DESTDIR)$(BINDIR)/fzm
 
 uninstall:
-	rm -rf $(DESTDIR)/usr/share/tuun   $(DESTDIR)/tmp/tuun
-	rm -f  $(DESTDIR)/usr/libexec/tuun $(DESTDIR)/usr/bin/tuun $(DESTDIR)/usr/bin/quu $(DESTDIR)/usr/bin/fzm
+	rm -rf $(DESTDIR)$(DATADIR)   $(DESTDIR)/tmp/tuun
+	rm -f  $(DESTDIR)$(LIBEXECDIR)/tuun $(DESTDIR)$(BINDIR)/tuun $(DESTDIR)$(BINDIR)/quu $(DESTDIR)$(BINDIR)/fzm
+
+.PHONY: scripts

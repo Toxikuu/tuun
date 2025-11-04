@@ -1,0 +1,62 @@
+#!/usr/bin/env sh
+
+show_help() {
+    # defaults
+    prefix="/usr/local"
+    bindir="$prefix/bin"
+    datadir="$prefix/share/tuun"
+    libexecdir="$prefix/libexec"
+
+    cat <<EOF
+Usage: ./configure [OPTIONS]
+
+Options:
+    --prefix=DIR        Set installation prefix             [$prefix]
+    --bindir=DIR        Set binary directory                [\$prefix/bin]
+    --datadir=DIR       Set data directory                  [\$prefix/share/tuun]
+    --libexecdir=DIR    Set program executables directory   [\$prefix/libexec]
+
+    --help              Show this help message and exit
+EOF
+    exit 0
+}
+
+unset prefix bindir datadir libexecdir
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --prefix=*)      prefix="${1#*=}" ;;
+    --bindir=*)      bindir="${1#*=}" ;;
+    --datadir=*)     datadir="${1#*=}" ;;
+    --libexecdir=*)  libexecdir="${1#*=}" ;;
+    --help)          show_help ;;
+    *) echo "Unknown option: $1" >&2 ;;
+  esac
+  shift
+done
+
+prefix="${prefix:-/usr/local}"
+bindir="${bindir:-$prefix/bin}"
+datadir="${datadir:-$prefix/share/tuun}"
+libexecdir="${libexecdir:-$prefix/libexec}"
+
+cat <<EOF
+Configuration:
+    prefix      $prefix
+    bindir      $bindir
+    datadir     $datadir
+    libexecdir  $libexecdir
+
+EOF
+
+cat > config.mk <<EOF
+PREFIX=$prefix
+BINDIR=$bindir
+DATADIR=$datadir
+LIBEXECDIR=$libexecdir
+EOF
+
+cat <<EOF
+Generated config.mk
+Now run 'make' to build the project.
+EOF
