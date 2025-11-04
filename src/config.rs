@@ -12,7 +12,6 @@ use std::{
     fs,
     path::{
         Path,
-        PathBuf,
     },
 };
 
@@ -90,10 +89,7 @@ impl Default for GeneralConfig {
             artists_with_commas:     vec!["Tyler, The Creator".into()],
             shuffle:                 true,
             playlist:                "/tmp/tuun/all.tpl".to_owned(),
-            music_dir:               format!(
-                "{}/Music",
-                std::env::var("HOME").expect("$HOME not set")
-            ),
+            music_dir:               get_fallback_music_dir().expect("Couldn't retrieve fallback music directory"),
             recent_length:           200,
             mpv_socket_poll_timeout: 96,
             now_playing_delay:       4224,
@@ -170,7 +166,8 @@ impl Config {
     }
 
     fn create_default(config_path: &Path) {
-        let default_config_path = PathBuf::from("/usr/share/tuun/default_config.toml");
+        let datadir = env!("DATADIR");
+        let default_config_path = Path::new(datadir).join("default_config.toml");
         info!(
             "Copying default config from {} to {}",
             default_config_path.display(),
@@ -194,4 +191,21 @@ impl Config {
             warn!("Did you run make install?");
         }
     }
+}
+
+
+/// This function retrieves a fallback music directory.
+///
+/// Note that this should only be used to find a default fallback music directory if not set in the
+/// config.
+fn get_fallback_music_dir() -> Option<String> {
+    if let Ok(music_dir) = env::var("XDG_MUSIC_DIR") {
+        return Some(music_dir)
+    }
+
+    if let Some(music_dir) = env::home_dir().map(|p| p.join("Music").to_string_lossy().to_string()) {
+        return Some(music_dir)
+    }
+
+    None
 }
