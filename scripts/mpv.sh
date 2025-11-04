@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 # Script to control the mpv instance spawned by tuun from the command line
 
