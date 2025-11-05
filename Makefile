@@ -28,6 +28,8 @@ clean:
 lint:
 	cargo clippy
 
+fmt: format
+
 format:
 	rustup component add --toolchain nightly-x86_64-unknown-linux-gnu rustfmt
 	cargo +nightly fmt
