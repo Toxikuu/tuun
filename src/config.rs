@@ -10,9 +10,7 @@
 use std::{
     env,
     fs,
-    path::{
-        Path,
-    },
+    path::Path,
 };
 
 use serde::Deserialize;
@@ -89,7 +87,8 @@ impl Default for GeneralConfig {
             artists_with_commas:     vec!["Tyler, The Creator".into()],
             shuffle:                 true,
             playlist:                "/tmp/tuun/all.tpl".to_owned(),
-            music_dir:               get_fallback_music_dir().expect("Couldn't retrieve fallback music directory"),
+            music_dir:               get_fallback_music_dir()
+                .expect("Couldn't retrieve fallback music directory"),
             recent_length:           200,
             mpv_socket_poll_timeout: 96,
             now_playing_delay:       4224,
@@ -193,7 +192,6 @@ impl Config {
     }
 }
 
-
 /// This function retrieves a fallback music directory.
 ///
 /// Note that this should only be used to find a default fallback music directory if not set in the
@@ -203,7 +201,8 @@ fn get_fallback_music_dir() -> Option<String> {
         return Some(music_dir)
     }
 
-    if let Some(music_dir) = env::home_dir().map(|p| p.join("Music").to_string_lossy().to_string()) {
+    if let Some(music_dir) = env::home_dir().map(|p| p.join("Music").to_string_lossy().to_string())
+    {
         return Some(music_dir)
     }
 

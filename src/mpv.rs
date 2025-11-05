@@ -1,11 +1,16 @@
 use std::{
-    fs, path::PathBuf, process::exit, sync::{
+    fs,
+    path::PathBuf,
+    process::exit,
+    sync::{
+        Arc,
+        LazyLock,
         atomic::{
             AtomicBool,
             AtomicU64,
             Ordering,
-        }, Arc, LazyLock
-    }
+        },
+    },
 };
 
 use anyhow::Result;
