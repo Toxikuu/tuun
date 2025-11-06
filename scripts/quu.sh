@@ -26,9 +26,15 @@ find "$SONG_DIR" -maxdepth 1 -mindepth 1 -type f \
     sed -e "s,^,$SONG_DIR/,"    \
         -e 's,\\,\\\\,g'        \
         -e 's,",\\",g'          \
-        > /tmp/tuun/quu.tpl
+        > /tmp/tuun/_quu.tpl
 
-# Start tuun if it isn't running
-if ! pgrep -x 'tuun' >/dev/null 2>&1; then
+if [ -s /tmp/tuun/_quu.tpl ]; then
+    mv /tmp/tuun/_quu.tpl /tmp/tuun/quu.tpl
+else
+    rm -f /tmp/tuun/_quu.tpl
+fi
+
+# Start tuun if something was queued and it isn't running
+if [ -e /tmp/tuun/quu.tpl ] && ! pgrep -x 'tuun' >/dev/null 2>&1; then
     alacritty --class tuun --hold -e %BINDIR%/tuun &
 fi

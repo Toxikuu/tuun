@@ -165,6 +165,10 @@ async fn handle_events(json: Value) {
 #[instrument(level = "trace")]
 #[allow(clippy::too_many_lines)]
 async fn handle_properties(json: Value) {
+    if let Err(e) = queue().await {
+        error!("Failed to refresh queue: {e:#}");
+    }
+
     if let Some(property) = json.get("name").and_then(Value::as_str) {
         match property {
             | "filename" => {
@@ -227,10 +231,6 @@ async fn handle_properties(json: Value) {
                 trace!("Time: {time}");
 
                 track.update_progress(time);
-
-                if let Err(e) = queue().await {
-                    error!("Failed to refresh queue: {e:#}");
-                }
 
                 if time == 0. {
                     FRESH.store(true, Ordering::Relaxed);
