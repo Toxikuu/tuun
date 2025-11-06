@@ -62,7 +62,7 @@ impl Default for DiscordConfig {
             fallback_art: "https://w7.pngwing.com/pngs/387/453/png-transparent-phonograph-record-lp-record-45-rpm-album-concerts-miscellaneous-photography-sound-thumbnail.png".to_owned(),
             small_image:  "https://cdn.discordapp.com/avatars/495603896803262507/4c3f854b1aa44e41850908d06c17bd25".to_owned(), // TODO: Add tuun logo
             small_text:   format!("tuun {}", env!("CARGO_PKG_VERSION")),
-            small_url:    "https://github.com/toxikuu/tuun".to_owned(),
+            small_url:    "https://github.com/tox-wtf/tuun".to_owned(),
             timeout:      100,
         }
     }

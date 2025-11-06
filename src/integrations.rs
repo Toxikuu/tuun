@@ -225,7 +225,7 @@ fn create_rpc_payload(track: &Track, now_ago: Duration) -> Activity<'_> {
         .large_url(&track.arturl)
         .small_image(&CONFIG.discord.small_image)
         .small_text(&CONFIG.discord.small_text)
-        .small_url("https://github.com/toxikuu/tuun");
+        .small_url("https://github.com/tox-wtf/tuun");
     debug!("Created rich presence activity assets");
 
     let now = SystemTime::now();

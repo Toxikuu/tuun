@@ -541,7 +541,7 @@ dependencies = [
 [[package]]
 name = "rustfm-scrobble"
 version = "1.1.1"
-source = "git+https://github.com/toxikuu/rustfm-scrobble#7b9318b590634d01cf328fd7af3971fe732e38a2"
+source = "git+https://github.com/tox-wtf/rustfm-scrobble#7b9318b590634d01cf328fd7af3971fe732e38a2"
 dependencies = [
  "md5",
  "serde",

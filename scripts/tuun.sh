@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# https://github.com/Toxikuu/tuun/issues/2
+# https://github.com/tox-wtf/tuun/issues/2
 if [ -e "/tmp/tuun/tuun.lock" ]; then
     if pidof %LIBEXECDIR%/tuun; then
         echo "It looks like tuun is already running" >&2
