@@ -133,6 +133,7 @@ impl Config {
             .expect("Couldn't find home directory");
         debug!("Detected home directory: '{}'", home_dir.display());
 
+        // FIXME: Use XDG var for config location
         let config_path = home_dir.join(".config/tuun/config.toml");
         if !config_path.exists() {
             info!("Creating default config");
@@ -165,7 +166,7 @@ impl Config {
     }
 
     fn create_default(config_path: &Path) {
-        let datadir = env!("DATADIR");
+        let datadir = option_env!("DATADIR").unwrap_or("/usr/share/data");
         let default_config_path = Path::new(datadir).join("default_config.toml");
         info!(
             "Copying default config from {} to {}",
