@@ -1,3 +1,11 @@
+## 5.8.0
+- Tweak config and make defaults consistent
+- Miscellaneous cleanup
+- Reduce log verbosity and truncate log
+- Improve queueing
+- Add clippy config
+- Update dependencies
+
 ## 5.7.0
 - Use primary artist for LastFM scrobbling (fixes #13)
 - Rework music directory fallback logic (fixes #14)
