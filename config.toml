@@ -3,7 +3,6 @@
 
 [lastfm]
 used = false
-apikey = "<your lastfm api key>"
 secret = "<your lastfm secret>"
 user = "<your lastfm username>"
 password = "<your lastfm password>"
@@ -21,6 +20,8 @@ fallback_art = "https://files.catbox.moe/rdwkcx.png"
 small_image = "https://cdn.discordapp.com/avatars/495603896803262507/4c3f854b1aa44e41850908d06c17bd25"
 # text displayed when hovering over the small image
 small_text = "hiii"
+# url opened when clicking on the small image
+small_url = "https://github.com/tox-wtf/tuun"
 # timeout in milliseconds for connecting to discord's ipc socket
 timeout = 100
 
@@ -33,18 +34,29 @@ secondary = "#333333"
 tertiary = "#e5e5f5"
 
 [general]
-# a list of artists whose names contain commas
-artists_with_commas = [ "Tyler, The Creator" ]
 shuffle = true
+
+# a list of artists whose names contain commas
+artists_with_commas = [
+    "Tyler, The Creator",
+    "Everything, Now!",
+    "Wow, Owls!",
+    "Go Robot, Go!",
+    "What Price, Wonderland?",
+    "Hey, Revolution!",
+]
+
 # `$HOME` and `~` are the only path expansions allowed
-music_dir = "~/Music"
+# music_dir = "~/Music"
+
 # if playlist is not specified, /tmp/tuun/all.tpl is used
 # a tpl file is just a plain-text new-line-delimited list of absolute paths
-playlist = "~/Music/Playlists/new.tpl"
-# how many songs the /tmp/tuun/recent.tpl should consist of
-recent_length = 200
+# playlist = "~/Music/playlists/sweet breaks.tpl"
+
+# how many songs /tmp/tuun/recent.tpl should consist of
+recent_length = 350
 # milliseconds to wait when polling mpv's socket on launch
 mpv_socket_poll_timeout = 96
 # milliseconds to wait before making discord and lastfm API calls to set now
 # playing status
-now_playing_delay = 4224
+now_playing_delay = 2345

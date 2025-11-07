@@ -81,21 +81,6 @@ pub struct DiscordConfig {
     pub timeout:      u64,
 }
 
-impl Default for GeneralConfig {
-    fn default() -> Self {
-        Self {
-            artists_with_commas:     vec!["Tyler, The Creator".into()],
-            shuffle:                 true,
-            playlist:                "/tmp/tuun/all.tpl".to_owned(),
-            music_dir:               get_fallback_music_dir()
-                .expect("Couldn't retrieve fallback music directory"),
-            recent_length:           200,
-            mpv_socket_poll_timeout: 96,
-            now_playing_delay:       4224,
-        }
-    }
-}
-
 #[derive(Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct ColorConfig {
@@ -124,6 +109,28 @@ pub struct GeneralConfig {
     pub recent_length:           usize,
     pub mpv_socket_poll_timeout: usize,
     pub now_playing_delay:       usize,
+}
+
+impl Default for GeneralConfig {
+    fn default() -> Self {
+        Self {
+            artists_with_commas:     vec![
+                "Tyler, The Creator".into(),
+                "Everything, Now!".into(),
+                "Wow, Owls!".into(),
+                "Go Robot, Go!".into(),
+                "What Price, Wonderland?".into(),
+                "Hey, Revolution!".into(),
+            ],
+            shuffle:                 true,
+            playlist:                "/tmp/tuun/all.tpl".to_owned(),
+            music_dir:               get_fallback_music_dir()
+                .expect("Couldn't retrieve fallback music directory"),
+            recent_length:           350,
+            mpv_socket_poll_timeout: 96,
+            now_playing_delay:       2345,
+        }
+    }
 }
 
 impl Config {
