@@ -123,11 +123,10 @@ impl Track {
     }
 
     // TODO: See if this should be used anywhere
-    #[allow(unused)]
-    pub async fn query_metadata(&self) -> Result<Value> {
-        let command = r#" { "command" : [ "get_property", "metadata" ] "#;
-        send_command(command).await
-    }
+    // pub async fn query_metadata(&self) -> Result<Value> {
+    //     let command = r#" { "command" : [ "get_property", "metadata" ] "#;
+    //     send_command(command).await
+    // }
 
     pub async fn query_filepath(&self) -> Result<PathBuf> {
         let command = r#" { "command" : [ "get_property", "path" ] } "#;
