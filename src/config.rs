@@ -207,7 +207,8 @@ fn get_fallback_config_dir() -> Option<String> {
         return Some(config_dir)
     }
 
-    if let Some(config_dir) = env::home_dir().map(|p| p.join(".config").to_string_lossy().to_string())
+    if let Some(config_dir) =
+        env::home_dir().map(|p| p.join(".config").to_string_lossy().to_string())
     {
         return Some(config_dir)
     }

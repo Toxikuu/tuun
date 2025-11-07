@@ -157,7 +157,9 @@ impl Track {
         if let Some(tag) = tag {
             let arturl = tag.frames().find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
+                | Content::ExtendedText(t) if t.description == "arturl" => {
+                    Some(strip_null(&t.value))
+                },
                 | _ => None,
             });
 
@@ -181,7 +183,9 @@ impl Track {
         if let Some(tag) = tag {
             let srcurl = tag.frames().find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Source" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "srcurl" => Some(strip_null(&t.value)),
+                | Content::ExtendedText(t) if t.description == "srcurl" => {
+                    Some(strip_null(&t.value))
+                },
                 | _ => None,
             });
 

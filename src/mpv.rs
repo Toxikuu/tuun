@@ -3,9 +3,13 @@ use std::{
     path::PathBuf,
     process::exit,
     sync::{
+        Arc,
+        LazyLock,
         atomic::{
-            AtomicBool, AtomicU32, Ordering
-        }, Arc, LazyLock
+            AtomicBool,
+            AtomicU32,
+            Ordering,
+        },
     },
 };
 
@@ -175,7 +179,11 @@ async fn handle_properties(json: Value) {
                 debug!("Pause property: {json:#}");
                 if let Some(paused) = json.get("data").and_then(Value::as_bool) {
                     PAUSED.store(paused, Ordering::Relaxed);
-                    if paused { info!("Paused"); } else { info!("Unpaused"); }
+                    if paused {
+                        info!("Paused");
+                    } else {
+                        info!("Unpaused");
+                    }
                 }
             },
             | "metadata" => {
@@ -193,12 +201,16 @@ async fn handle_properties(json: Value) {
                 debug!("Loop property: {json:#}");
                 if let Some(looped) = json.get("data") {
                     let looped = match looped {
-                        Value::Bool(b) => *b,
-                        Value::String(s) => s == "inf",
-                        _ => false,
+                        | Value::Bool(b) => *b,
+                        | Value::String(s) => s == "inf",
+                        | _ => false,
                     };
                     LOOPED.store(looped, Ordering::Relaxed);
-                    if looped { info!("Looped"); } else { info!("Unlooped"); }
+                    if looped {
+                        info!("Looped");
+                    } else {
+                        info!("Unlooped");
+                    }
                 }
             },
             | "volume" => {
@@ -215,7 +227,11 @@ async fn handle_properties(json: Value) {
                 debug!("Mute property: {json:#}");
                 if let Some(muted) = json.get("data").and_then(Value::as_bool) {
                     MUTED.store(muted, Ordering::Relaxed);
-                    if muted { info!("Muted"); } else { info!("Unmuted"); }
+                    if muted {
+                        info!("Muted");
+                    } else {
+                        info!("Unmuted");
+                    }
                 }
             },
             | "playback-time" => {
@@ -238,8 +254,8 @@ async fn handle_properties(json: Value) {
                 // Set now playing status if the track has been playing for more than a
                 // configureable delay, or it's more than 5% through.
                 #[allow(clippy::cast_precision_loss)]
-                let delay = (track.duration * 0.05)
-                    .min(CONFIG.general.now_playing_delay as f64 / 1000.);
+                let delay =
+                    (track.duration * 0.05).min(CONFIG.general.now_playing_delay as f64 / 1000.);
 
                 if time >= delay && !NOW_PLAYING_SET.load(Ordering::Relaxed) {
                     NOW_PLAYING_SET.store(true, Ordering::Relaxed);
