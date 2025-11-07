@@ -55,11 +55,12 @@ pub static SCROBBLER: LazyLock<Mutex<Option<Arc<Scrobbler>>>> = LazyLock::new(||
 #[tokio::main]
 async fn main() -> ! {
     // Initialize logging
+    let _ = fs::write("/tmp/tuun/log", "");
     let file_appender = rolling::never("/tmp/tuun", "log");
     let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
 
     let log_level = env::var("TUUN_LOG_LEVEL").unwrap_or_else(|_| String::from("info"));
-    let filter = EnvFilter::new(format!("{log_level},winit=info,calloop=info,polling=info"));
+    let filter = EnvFilter::new(format!("{log_level},rustls=info,ureq=info,winit=info,calloop=info,polling=info"));
 
     tracing_subscriber::fmt()
         .with_env_filter(filter)
