@@ -362,15 +362,14 @@ impl Track {
     }
 
     #[rustfmt::skip]
-    #[allow(clippy::float_cmp)] // handled with .round()
     pub fn is_default(&self) -> bool {
         self.progress == 0.
-            && self.duration.round() == 1000.0
-            && self.title    == String::with_capacity(0)
-            && self.artist   == String::with_capacity(0)
-            && self.album    == String::with_capacity(0)
-            && self.arturl   == String::with_capacity(0)
-            && self.date     == String::with_capacity(0)
+            && (self.duration - 1000.0).abs() < 1.0
+            && self.title    == String::new()
+            && self.artist   == String::new()
+            && self.album    == String::new()
+            && self.arturl   == String::new()
+            && self.date     == String::new()
     }
 }
 

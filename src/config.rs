@@ -34,10 +34,10 @@ impl Default for LastFMConfig {
     fn default() -> Self {
         Self {
             used:             false,
-            apikey:           String::with_capacity(0),
-            secret:           String::with_capacity(0),
-            user:             String::with_capacity(0),
-            password:         String::with_capacity(0),
+            apikey:           String::new(),
+            secret:           String::new(),
+            user:             String::new(),
+            password:         String::new(),
             scrobble_percent: 44,
         }
     }
@@ -107,9 +107,9 @@ pub struct ColorConfig {
 impl Default for ColorConfig {
     fn default() -> Self {
         Self {
-            primary:   "#f35f7a".to_string(),
-            secondary: "#3b4e84".to_string(),
-            tertiary:  "#e5e5e5".to_string(),
+            primary:   "#f35f7a".into(),
+            secondary: "#3b4e84".into(),
+            tertiary:  "#e5e5e5".into(),
         }
     }
 }
@@ -133,10 +133,11 @@ impl Config {
             .expect("Couldn't find home directory");
         debug!("Detected home directory: '{}'", home_dir.display());
 
-        // FIXME: Use XDG var for config location
-        let config_path = home_dir.join(".config/tuun/config.toml");
+        let config_dir = get_fallback_config_dir().expect("Couldn't find config directory");
+        let config_path = Path::new(&config_dir).join("tuun/config.toml");
+
         if !config_path.exists() {
-            info!("Creating default config");
+            warn!("Creating default config at {}", config_path.display());
             Self::create_default(&config_path);
         }
 
@@ -191,6 +192,20 @@ impl Config {
             warn!("Did you run make install?");
         }
     }
+}
+
+/// This function retrieves a fallback config directory.
+fn get_fallback_config_dir() -> Option<String> {
+    if let Ok(config_dir) = env::var("XDG_CONFIG_HOME") {
+        return Some(config_dir)
+    }
+
+    if let Some(config_dir) = env::home_dir().map(|p| p.join(".config").to_string_lossy().to_string())
+    {
+        return Some(config_dir)
+    }
+
+    None
 }
 
 /// This function retrieves a fallback music directory.

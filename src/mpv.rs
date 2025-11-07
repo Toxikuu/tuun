@@ -84,8 +84,8 @@ pub async fn connect() -> Result<()> {
     }
 
     // Continuously read lines from mpv's socket
+    let mut line = String::with_capacity(64);
     loop {
-        let mut line = String::new();
         let bytes_read = reader.read_line(&mut line).await?;
         if bytes_read == 0 {
             // EOF
@@ -100,6 +100,7 @@ pub async fn connect() -> Result<()> {
                 eprintln!("Failed to parse JSON: {e}");
             },
         }
+        line.clear();
     }
 
     Ok(())
@@ -117,7 +118,7 @@ pub async fn send_command(command: &str) -> Result<Value> {
     writer.flush().await?;
     debug!("Sent mpv command: {command:#}");
 
-    let mut response = String::new();
+    let mut response = String::with_capacity(64);
     reader.read_line(&mut response).await?;
 
     let json: Value = serde_json::from_str(&response)?;
