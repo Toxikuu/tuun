@@ -160,7 +160,6 @@ async fn handle_events(json: Value) {
 /// Handles MPV properties.
 /// Supported properties include filename, pause, loop-file, mute, and playback-time
 #[instrument(level = "trace")]
-#[allow(clippy::too_many_lines)]
 async fn handle_properties(json: Value) {
     if let Err(e) = queue().await {
         error!("Failed to refresh queue: {e:#}");
