@@ -107,9 +107,9 @@ pub struct ColorConfig {
 impl Default for ColorConfig {
     fn default() -> Self {
         Self {
-            primary:   "#f35f7a".into(),
-            secondary: "#3b4e84".into(),
-            tertiary:  "#e5e5e5".into(),
+            primary:   "#cdcddd".into(),
+            secondary: "#333333".into(),
+            tertiary:  "#e5e5f5".into(),
         }
     }
 }
