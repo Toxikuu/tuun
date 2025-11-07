@@ -3,13 +3,9 @@ use std::{
     path::PathBuf,
     process::exit,
     sync::{
-        Arc,
-        LazyLock,
         atomic::{
-            AtomicBool,
-            AtomicU64,
-            Ordering,
-        },
+            AtomicBool, AtomicU32, Ordering
+        }, Arc, LazyLock
     },
 };
 
@@ -53,7 +49,7 @@ const SOCK_PATH: &str = "/tmp/tuun/mpvsocket";
 pub static LOOPED: AtomicBool = AtomicBool::new(false);
 pub static PAUSED: AtomicBool = AtomicBool::new(false);
 pub static MUTED: AtomicBool = AtomicBool::new(false);
-pub static VOLUME: AtomicU64 = AtomicU64::new(0);
+pub static VOLUME: AtomicU32 = AtomicU32::new(0);
 
 static FRESH: AtomicBool = AtomicBool::new(false);
 static NOW_PLAYING_SET: AtomicBool = AtomicBool::new(false);
@@ -172,19 +168,18 @@ async fn handle_properties(json: Value) {
     if let Some(property) = json.get("name").and_then(Value::as_str) {
         match property {
             | "filename" => {
-                info!("MPV Property: Filename changed");
+                debug!("Filename changed");
                 debug!("Filename property: {json:#}");
             },
             | "pause" => {
-                info!("MPV Property: Pause toggled");
                 debug!("Pause property: {json:#}");
                 if let Some(paused) = json.get("data").and_then(Value::as_bool) {
                     PAUSED.store(paused, Ordering::Relaxed);
+                    if paused { info!("Paused"); } else { info!("Unpaused"); }
                 }
-                debug!("PAUSED set to {}", PAUSED.load(Ordering::Relaxed));
             },
             | "metadata" => {
-                info!("MPV Property: Metadata changed");
+                debug!("MPV Property: Metadata changed");
                 debug!("Metadata property: {json:#}");
 
                 let mut track = TRACK.lock().await;
@@ -195,34 +190,33 @@ async fn handle_properties(json: Value) {
                 drop(track);
             },
             | "loop-file" => {
-                info!("MPV Property: Loop toggled");
                 debug!("Loop property: {json:#}");
-                if let Some(looped) = json.get("data").and_then(Value::as_bool) {
+                if let Some(looped) = json.get("data") {
+                    let looped = match looped {
+                        Value::Bool(b) => *b,
+                        Value::String(s) => s == "inf",
+                        _ => false,
+                    };
                     LOOPED.store(looped, Ordering::Relaxed);
+                    if looped { info!("Looped"); } else { info!("Unlooped"); }
                 }
-                // account for loop="inf"
-                if let Some(looped) = json.get("data").and_then(Value::as_str) {
-                    let looped = matches!(looped, "inf");
-                    LOOPED.store(looped, Ordering::Relaxed);
-                }
-                debug!("LOOPED set to {}", LOOPED.load(Ordering::Relaxed));
             },
             | "volume" => {
-                info!("MPV: Property: Volume changed");
                 debug!("Volume: {json:#}");
+
                 if let Some(vol) = json.get("data").and_then(Value::as_f64) {
-                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                    VOLUME.store(vol as u64, Ordering::Relaxed);
+                    #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+                    let vol = vol.trunc() as u32;
+                    VOLUME.store(vol, Ordering::Relaxed);
+                    info!("Volume set to {vol}");
                 }
-                debug!("VOLUME set to {}", VOLUME.load(Ordering::Relaxed));
             },
             | "mute" => {
-                info!("MPV Property: Mute toggled");
                 debug!("Mute property: {json:#}");
                 if let Some(muted) = json.get("data").and_then(Value::as_bool) {
                     MUTED.store(muted, Ordering::Relaxed);
+                    if muted { info!("Muted"); } else { info!("Unmuted"); }
                 }
-                debug!("MUTED set to {}", MUTED.load(Ordering::Relaxed));
             },
             | "playback-time" => {
                 trace!("MPV Property: Playback time changed");
@@ -230,25 +224,27 @@ async fn handle_properties(json: Value) {
                 let time = json.get("data").and_then(Value::as_f64).unwrap_or(0.);
                 trace!("Time: {time}");
 
-                track.update_progress(time);
-
-                if time == 0. {
+                // If a track is fresh, it can be scrobbled and its now playing status has not yet
+                // been set.
+                if time == 0.0 {
+                    debug!("Track is fresh");
                     FRESH.store(true, Ordering::Relaxed);
                     NOW_PLAYING_SET.store(false, Ordering::Relaxed);
-                    info!("Now playing '{track}'");
-                    debug!("Registered track '{track:#?}' as fresh");
                 }
 
+                track.update_progress(time);
                 track.display();
 
-                // Set LastFM and Discord Rich Presence now playing if the track has been playing
-                // for 5 seconds, or it's more than 5% through.
+                // Set now playing status if the track has been playing for more than a
+                // configureable delay, or it's more than 5% through.
                 #[allow(clippy::cast_precision_loss)]
-                let delay =
-                    (track.duration * 0.05).min(CONFIG.general.now_playing_delay as f64 / 1000.);
+                let delay = (track.duration * 0.05)
+                    .min(CONFIG.general.now_playing_delay as f64 / 1000.);
+
                 if time >= delay && !NOW_PLAYING_SET.load(Ordering::Relaxed) {
                     NOW_PLAYING_SET.store(true, Ordering::Relaxed);
-                    info!("Pushing now playing status for '{track}'");
+                    info!("Now playing '{track}'");
+                    debug!("Pushing now playing status");
 
                     if CONFIG.lastfm.used {
                         info!("Setting LastFM now playing");

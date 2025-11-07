@@ -158,15 +158,13 @@ impl Track {
         if let Some(tag) = tag {
             let arturl = tag.frames().find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Cover" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "arturl" => {
-                    Some(strip_null(&t.value))
-                },
-                | _ => {
-                    warn!("Couldn't find arturl in extended text or cover in extended link frames");
-                    debug!("Frames: {f:#?}");
-                    None
-                },
+                | Content::ExtendedText(t) if t.description == "arturl" => Some(strip_null(&t.value)),
+                | _ => None,
             });
+
+            if arturl.is_none() {
+                warn!("Couldn't find srcurl in extended text or cover in extended link frames");
+            }
 
             return arturl;
         }
@@ -184,15 +182,13 @@ impl Track {
         if let Some(tag) = tag {
             let srcurl = tag.frames().find_map(|f| match f.content() {
                 | Content::ExtendedLink(l) if l.description == "Source" => Some(l.link.clone()),
-                | Content::ExtendedText(t) if t.description == "srcurl" => {
-                    Some(strip_null(&t.value))
-                },
-                | _ => {
-                    warn!("Couldn't find srcurl in extended text or cover in extended link frames");
-                    debug!("Frames: {f:#?}");
-                    None
-                },
+                | Content::ExtendedText(t) if t.description == "srcurl" => Some(strip_null(&t.value)),
+                | _ => None,
             });
+
+            if srcurl.is_none() {
+                warn!("Couldn't find srcurl in extended text or cover in extended link frames");
+            }
 
             return srcurl;
         }
@@ -216,11 +212,13 @@ impl Track {
             .to_string()
     }
 
-    #[instrument(level = "debug")]
+    #[instrument(level = "debug", skip(self, metadata))]
     pub async fn update_metadata(&mut self, metadata: &Value) -> Result<()> {
         let Some(data) = metadata.get("data").and_then(|d| d.as_object()) else {
-            warn!("Failed to get metadata from {metadata:#}");
-            warn!("Not updating metadata");
+            // This typically only happens in edge cases where no metadata exists yet, such as when
+            // MPV has just started
+            debug!("Failed to get metadata from {metadata:#}");
+            debug!("Not updating metadata");
             return Ok(());
         };
 

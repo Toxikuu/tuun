@@ -109,8 +109,8 @@ pub async fn lastfm_now_playing(track: Track) -> Result<()> {
         if scrobbler_lock.is_none() {
             warn!("Trying to initialize scrobbler");
             if let Err(e) = authenticate_lastfm_scrobbler_unchecked().await {
-                error!("Failed to initialize scrobbler: {e}")
-            };
+                error!("Failed to initialize scrobbler: {e}");
+            }
         } else {
             debug!("Got scrobbler lock on attempt {att}");
             break;
@@ -140,8 +140,8 @@ pub async fn lastfm_scrobble(track: Track) -> Result<()> {
         if scrobbler_lock.is_none() {
             warn!("Trying to initialize scrobbler");
             if let Err(e) = authenticate_lastfm_scrobbler_unchecked().await {
-                error!("Failed to initialize scrobbler: {e}")
-            };
+                error!("Failed to initialize scrobbler: {e}");
+            }
         } else {
             debug!("Got scrobbler lock on attempt {att}");
             break;
@@ -196,7 +196,7 @@ pub async fn discord_rpc(track: Track, now_ago: Duration) -> Result<()> {
         }
 
         let payload = create_rpc_payload(&track, now_ago);
-        debug!("Setting Discord RPC for {track:#?}");
+        debug!("Setting Discord Rich Presence for {track:#?}");
 
         if let Err(e) = client.set_activity(payload) {
             drop(client);
@@ -216,7 +216,7 @@ pub async fn discord_rpc(track: Track, now_ago: Duration) -> Result<()> {
     .await?
 }
 
-#[instrument]
+#[instrument(skip(track))]
 fn create_rpc_payload(track: &Track, now_ago: Duration) -> Activity<'_> {
     debug!("Encoded arturl is 'track.arturl'");
     let assets = activity::Assets::new()
@@ -235,7 +235,7 @@ fn create_rpc_payload(track: &Track, now_ago: Duration) -> Activity<'_> {
         - now_ago;
     let end = start + Duration::from_secs_f64(track.duration);
 
-    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)] // TODO: <
+    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
     let timestamp = activity::Timestamps::new()
         .start(start.as_millis() as i64)
         .end(end.as_millis() as i64);
