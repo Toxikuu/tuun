@@ -12,6 +12,8 @@ if [ ! -d "$SONG_DIR" ]; then
     exit 1
 fi
 
+mkdir -p /tmp/tuun
+
 # Gather selected songs
 #
 # Then, write them to the queue, and apply some fixes:
